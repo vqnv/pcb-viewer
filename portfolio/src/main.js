@@ -17,7 +17,7 @@ import './controls.js';
 import './uiPanel.js';
 
 // Initialize interactions (click handlers)
-import './interactions.js';
+import { updateRaycastTargets } from './interactions.js';
 
 // Initialize name animation
 import './nameAnimation.js';
@@ -31,6 +31,9 @@ import { animate } from './animation.js';
 // Load the 3D model
 loadModel('usbmouseconnectorgeneric.glb').then(() => {
   console.log('PCB loaded, now loading additional components...');
+  
+  // Update raycast targets after main model loads for optimization
+  setTimeout(() => updateRaycastTargets(), 100);
   
   // Load the second PCB at a different position
   loadSecondaryPCB('project.glb', 20);

@@ -9,11 +9,28 @@ import { getBaseName, getComponentGroup } from './utils.js';
 
 const raycaster = new THREE.Raycaster();
 raycaster.layers.set(1);
+raycaster.params.Points = { threshold: 0.5 }; // Optimize raycasting
 
 let selectedObject = null;
 let hoveredObject = null;
 let lastHoverCheck = 0;
-const hoverCheckInterval = 100; // Throttle hover checks for performance
+const hoverCheckInterval = 75; // Reduced throttle for better hover responsiveness
+
+// Cache for raycasting - only check layer 1 objects
+let raycastTargets = [];
+
+// Update raycast targets when models load
+export function updateRaycastTargets() {
+  raycastTargets = [];
+  scene.children.forEach(obj => {
+    obj.traverse(child => {
+      if (child.isMesh && child.layers.test(camera.layers)) {
+        raycastTargets.push(child);
+      }
+    });
+  });
+  console.log(`Raycast optimization: ${raycastTargets.length} targets cached`);
+}
 
 function onMouseDown(event) {
   const coords = new THREE.Vector2(
@@ -132,6 +149,7 @@ function onMouseMove(event) {
   );
 
   raycaster.setFromCamera(coords, camera);
+  // Use recursive raycasting to detect nested meshes
   const intersections = raycaster.intersectObjects(scene.children, true);
 
   if (intersections.length > 0) {

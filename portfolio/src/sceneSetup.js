@@ -12,15 +12,22 @@ export const camera = new THREE.PerspectiveCamera(
 
 export const renderer = new THREE.WebGLRenderer({
   canvas: document.querySelector('#bg'),
-  antialias: true
+  antialias: window.devicePixelRatio < 2, // Only antialias on lower DPI screens
+  powerPreference: 'high-performance'
 });
 
-renderer.setPixelRatio(window.devicePixelRatio);
+// Cap pixel ratio at 1.5 for better performance
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
 renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.shadowMap.enabled = false; // Disable shadows for performance
 
 const pmremGenerator = new THREE.PMREMGenerator(renderer);
-scene.environment = pmremGenerator.fromScene(new RoomEnvironment()).texture;
-scene.environmentIntensity = 0.3;
+const roomEnvironment = new RoomEnvironment();
+pmremGenerator.compileEquirectangularShader(); // Precompile shaders
+scene.environment = pmremGenerator.fromScene(roomEnvironment).texture;
+scene.environmentIntensity = 0.1; // Reduced even more for better performance
+pmremGenerator.dispose(); // Clean up after generating
+roomEnvironment.dispose(); // Clean up environment
 
 camera.position.set(-10, 5, 15);
 camera.layers.enable(1);

@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { scene } from './sceneSetup.js';
 import { getBaseName } from './utils.js';
 
@@ -7,6 +8,9 @@ export let gltfModel = null;
 export let secondaryPCB = null;
 export let componentGroups = {};
 export let isRotating = true;
+
+// Material cache for performance - reuse materials instead of creating new ones
+const materialCache = new Map();
 
 export function setIsRotating(value) {
   isRotating = value;
@@ -22,55 +26,124 @@ export function loadModel(modelPath) {
         console.log('GLB model loaded successfully:', glb);
         const model = glb.scene;
         
+        // Collect track/zone/pad meshes for merging (by name only, preserving their yellow/copper color)
+        const trackGeometries = [];
+        const trackMeshesToRemove = [];
+        let trackColor = null; // We'll use the first track's color
+        
         model.traverse((child) => {
           if (child.isMesh) {
             const baseName = getBaseName(child.name);
-
-            if (!componentGroups[baseName]) {
-              componentGroups[baseName] = [];
-            }
-
-            componentGroups[baseName].push(child);
-            child.layers.set(1);
+            const meshName = child.name.toLowerCase();
             
-            // Get the original color
-            let materialColor;
+            // Check if this is a track/zone/pad by NAME patterns only
+            const isTrack = meshName.includes('track') || 
+                           meshName.includes('zone') || 
+                           meshName.includes('pad') ||
+                           meshName.includes('via') ||
+                           meshName.includes('trace');
             
-            // If it has a texture map, skip it
-            if (child.material.map) {
-              return;
-            }
-            
-            if (child.material.color) {
-              const hex = child.material.color.getHex();
-              
-              // Check if it's greenish (likely the PCB substrate)
-              const r = (hex >> 16) & 0xff;
-              const g = (hex >> 8) & 0xff;
-              const b = hex & 0xff;
-              
-              if (g > r && g > b && g > 100) {
-                // It's green - make it dark PCB green
-                materialColor = 0x1a5c1a;
-              } else {
-                // Keep original color for components
-                materialColor = hex;
+            if (isTrack) {
+              // This is a track - collect for merging and preserve its color
+              if (!trackColor && child.material.color) {
+                trackColor = child.material.color.getHex(); // Save the first track's color
               }
+              
+              const geometry = child.geometry.clone();
+              child.updateWorldMatrix(true, false);
+              geometry.applyMatrix4(child.matrixWorld);
+              trackGeometries.push(geometry);
+              trackMeshesToRemove.push(child);
             } else {
-              materialColor = 0x888888; // Default grey
+              // Not a track - keep it separate
+              child.layers.set(1);
+              
+              // Get the original color
+              let materialColor;
+              
+              // If it has a texture map, skip it
+              if (child.material.map) {
+                if (!componentGroups[baseName]) {
+                  componentGroups[baseName] = [];
+                }
+                componentGroups[baseName].push(child);
+                return;
+              }
+              
+              if (child.material.color) {
+                const hex = child.material.color.getHex();
+                
+                // Check if it's greenish (likely the PCB substrate)
+                const r = (hex >> 16) & 0xff;
+                const g = (hex >> 8) & 0xff;
+                const b = hex & 0xff;
+                
+                if (g > r && g > b && g > 100) {
+                  // It's green - make it dark PCB green
+                  materialColor = 0x1a5c1a;
+                } else {
+                  // Keep original color for components
+                  materialColor = hex;
+                }
+              } else {
+                materialColor = 0x888888; // Default grey
+              }
+              
+              // Reuse materials from cache for better performance
+              const materialKey = `${materialColor}_0.6_0.4`;
+              let material = materialCache.get(materialKey);
+              if (!material) {
+                material = new THREE.MeshStandardMaterial({
+                  color: materialColor,
+                  metalness: 0.6,
+                  roughness: 0.4
+                });
+                materialCache.set(materialKey, material);
+              }
+              child.material = material;
+              
+              // Save THIS material as the original for reset
+              child.userData.originalMaterial = child.material;
+              
+              if (!componentGroups[baseName]) {
+                componentGroups[baseName] = [];
+              }
+              componentGroups[baseName].push(child);
             }
-            
-            // Create new material
-            child.material = new THREE.MeshStandardMaterial({
-              color: materialColor,
-              metalness: 0.8,
-              roughness: 0.2
-            });
-            
-            // Save THIS material as the original for reset
-            child.userData.originalMaterial = child.material;
           }
         });
+        
+        // Merge all track geometries into one mesh with their original color
+        if (trackGeometries.length > 0) {
+          console.log(`Merging ${trackGeometries.length} track/zone/pad meshes into one...`);
+          
+          const mergedGeometry = mergeGeometries(trackGeometries, false);
+          
+          const mergedMesh = new THREE.Mesh(
+            mergedGeometry,
+            new THREE.MeshStandardMaterial({
+              color: trackColor || 0xFFD700, // Use original track color or default gold
+              metalness: 0.6,
+              roughness: 0.4
+            })
+          );
+          
+          mergedMesh.layers.set(1);
+          mergedMesh.name = 'MergedTracks';
+          mergedMesh.userData.originalMaterial = mergedMesh.material;
+          
+          // Remove old track meshes
+          trackMeshesToRemove.forEach(mesh => {
+            if (mesh.parent) {
+              mesh.parent.remove(mesh);
+            }
+          });
+          
+          model.add(mergedMesh);
+          componentGroups['MergedTracks'] = [mergedMesh];
+          
+          console.log(`Track merging complete! Reduced ${trackGeometries.length} meshes to 1, keeping original color`);
+        }
         
         // Make model larger and more visible first
         model.scale.set(200, 200, 200);
@@ -131,12 +204,18 @@ export function loadAdditionalComponent(componentPath, position, scale, rotation
           // Set name for identification
           child.name = componentName;
           
-          // Create material
-          child.material = new THREE.MeshStandardMaterial({
-            color: color,
-            metalness: 0.8,
-            roughness: 0.2
-          });
+          // Reuse material from cache
+          const materialKey = `${color}_0.6_0.4`;
+          let material = materialCache.get(materialKey);
+          if (!material) {
+            material = new THREE.MeshStandardMaterial({
+              color: color,
+              metalness: 0.6,
+              roughness: 0.4
+            });
+            materialCache.set(materialKey, material);
+          }
+          child.material = material;
           
           // Save original material for reset
           child.userData.originalMaterial = child.material;
@@ -182,55 +261,123 @@ export function loadSecondaryPCB(modelPath, offsetX = 300) {
         console.log('Secondary PCB loaded:', modelPath);
         const model = glb.scene;
         
+        // Collect track/zone/pad meshes for merging (by name only)
+        const trackGeometries = [];
+        const trackMeshesToRemove = [];
+        let trackColor = null;
+        
         model.traverse((child) => {
           if (child.isMesh) {
             const baseName = getBaseName(child.name);
-
-            if (!componentGroups[baseName]) {
-              componentGroups[baseName] = [];
-            }
-
-            componentGroups[baseName].push(child);
-            child.layers.set(1);
+            const meshName = child.name.toLowerCase();
             
-            // Get the original color
-            let materialColor;
+            // Check if this is a track/zone/pad by NAME patterns only
+            const isTrack = meshName.includes('track') || 
+                           meshName.includes('zone') || 
+                           meshName.includes('pad') ||
+                           meshName.includes('via') ||
+                           meshName.includes('trace');
             
-            // If it has a texture map, skip it
-            if (child.material.map) {
-              return;
-            }
-            
-            if (child.material.color) {
-              const hex = child.material.color.getHex();
-              
-              // Check if it's greenish (likely the PCB substrate)
-              const r = (hex >> 16) & 0xff;
-              const g = (hex >> 8) & 0xff;
-              const b = hex & 0xff;
-              
-              if (g > r && g > b && g > 100) {
-                // It's green - make it dark PCB green
-                materialColor = 0x1a5c1a;
-              } else {
-                // Keep original color for components
-                materialColor = hex;
+            if (isTrack) {
+              // Collect for merging and preserve color
+              if (!trackColor && child.material.color) {
+                trackColor = child.material.color.getHex();
               }
+              
+              const geometry = child.geometry.clone();
+              child.updateWorldMatrix(true, false);
+              geometry.applyMatrix4(child.matrixWorld);
+              trackGeometries.push(geometry);
+              trackMeshesToRemove.push(child);
             } else {
-              materialColor = 0x888888; // Default grey
+              // Keep everything else separate
+              child.layers.set(1);
+              
+              // Get the original color
+              let materialColor;
+              
+              // If it has a texture map, skip it
+              if (child.material.map) {
+                if (!componentGroups[baseName]) {
+                  componentGroups[baseName] = [];
+                }
+                componentGroups[baseName].push(child);
+                return;
+              }
+              
+              if (child.material.color) {
+                const hex = child.material.color.getHex();
+                
+                // Check if it's greenish (likely the PCB substrate)
+                const r = (hex >> 16) & 0xff;
+                const g = (hex >> 8) & 0xff;
+                const b = hex & 0xff;
+                
+                if (g > r && g > b && g > 100) {
+                  // It's green - make it dark PCB green
+                  materialColor = 0x1a5c1a;
+                } else {
+                  // Keep original color for components
+                  materialColor = hex;
+                }
+              } else {
+                materialColor = 0x888888; // Default grey
+              }
+              
+              // Reuse materials from cache for better performance
+              const materialKey = `${materialColor}_0.6_0.4`;
+              let material = materialCache.get(materialKey);
+              if (!material) {
+                material = new THREE.MeshStandardMaterial({
+                  color: materialColor,
+                  metalness: 0.6,
+                  roughness: 0.4
+                });
+                materialCache.set(materialKey, material);
+              }
+              child.material = material;
+              
+              // Save THIS material as the original for reset
+              child.userData.originalMaterial = child.material;
+              
+              if (!componentGroups[baseName]) {
+                componentGroups[baseName] = [];
+              }
+              componentGroups[baseName].push(child);
             }
-            
-            // Create new material
-            child.material = new THREE.MeshStandardMaterial({
-              color: materialColor,
-              metalness: 0.8,
-              roughness: 0.2
-            });
-            
-            // Save THIS material as the original for reset
-            child.userData.originalMaterial = child.material;
           }
         });
+        
+        // Merge track geometries
+        if (trackGeometries.length > 0) {
+          console.log(`Merging ${trackGeometries.length} secondary PCB track meshes...`);
+          
+          const mergedGeometry = mergeGeometries(trackGeometries, false);
+          
+          const mergedMesh = new THREE.Mesh(
+            mergedGeometry,
+            new THREE.MeshStandardMaterial({
+              color: trackColor || 0xFFD700,
+              metalness: 0.6,
+              roughness: 0.4
+            })
+          );
+          
+          mergedMesh.layers.set(1);
+          mergedMesh.name = 'MergedSecondaryTracks';
+          mergedMesh.userData.originalMaterial = mergedMesh.material;
+          
+          trackMeshesToRemove.forEach(mesh => {
+            if (mesh.parent) {
+              mesh.parent.remove(mesh);
+            }
+          });
+          
+          model.add(mergedMesh);
+          componentGroups['MergedSecondaryTracks'] = [mergedMesh];
+          
+          console.log('Secondary track merging complete!');
+        }
         
         // Make model larger and more visible
         model.scale.set(200, 200, 200);

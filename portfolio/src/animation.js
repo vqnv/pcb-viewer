@@ -2,8 +2,18 @@ import { scene, camera, renderer } from './sceneSetup.js';
 import { controls } from './controls.js';
 import { gltfModel, secondaryPCB, isRotating } from './modelLoader.js';
 
-export function animate() {
+// FPS limiting for better performance
+const targetFPS = 60;
+const frameDelay = 1000 / targetFPS;
+let lastFrameTime = 0;
+
+export function animate(currentTime = 0) {
   requestAnimationFrame(animate);
+  
+  // Limit to target FPS
+  const elapsed = currentTime - lastFrameTime;
+  if (elapsed < frameDelay) return;
+  lastFrameTime = currentTime - (elapsed % frameDelay);
   
   // Rotate the main PCB if it's loaded and rotation is enabled
   if (gltfModel && isRotating) {

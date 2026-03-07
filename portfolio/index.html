@@ -8,6 +8,13 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
     <title>portfolio</title>
+    <style>
+      /* Critical CSS to prevent FOUC */
+      body { margin: 0; overflow: hidden; background: #000; }
+      .info-panel { position: fixed; right: -400px; }
+      .modal-panel { position: fixed; opacity: 0; pointer-events: none; transform: translate(-50%, -50%) scale(0); }
+      #bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; }
+    </style>
   </head>
   <body>
 
