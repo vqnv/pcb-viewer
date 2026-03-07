@@ -44,10 +44,15 @@ export function moveCamera() {
 
 document.body.onscroll = moveCamera;
 
-// Toggle rotation with spacebar
+// Toggle all rotations (camera + scene objects) with spacebar
 window.addEventListener('keydown', (e) => {
   if (e.code === 'Space') {
-    controls.autoRotate = !controls.autoRotate;
-    console.log('Auto-rotation:', controls.autoRotate ? 'ON' : 'OFF');
+    e.preventDefault();
+    import('./modelLoader.js').then(({ isRotating, setIsRotating }) => {
+      const next = !isRotating;
+      setIsRotating(next);
+      controls.autoRotate = next;
+      console.log('Rotations:', next ? 'ON' : 'OFF');
+    });
   }
 });

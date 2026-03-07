@@ -5,7 +5,7 @@ import './style.css';
 import './sceneSetup.js';
 
 // Load model
-import { loadModel, loadAdditionalComponent, loadSecondaryPCB } from './modelLoader.js';
+import { loadModel, loadAdditionalComponent, loadSecondaryPCB, loadComponentOntoSecondaryPCB } from './modelLoader.js';
 
 // Initialize lighting and stars
 import './lighting.js';
@@ -45,10 +45,28 @@ loadModel('usbmouseconnectorgeneric.glb').then(() => {
   // Update raycast targets after main model loads for optimization
   setTimeout(() => updateRaycastTargets(), 100);
   
-  // Load the second PCB at a different position
-  loadSecondaryPCB('project.glb', 20);
-  
-  
+  // Load the second PCB at a different position, then attach Arduino Nano and Relay
+  loadSecondaryPCB('project.glb', 20).then(() => {
+    Promise.all([
+      loadComponentOntoSecondaryPCB(
+        'nano.glb',
+        { x: 0.167, y: 0.005, z: 0.1085 },
+        { x: 0.001, y: 0.001, z: 0.001 },
+        { x: 0, y: -1.57, z: 0 },
+        0x000000,
+        'Arduino_Nano_001'
+      ),
+      loadComponentOntoSecondaryPCB(
+        'relay.glb',
+        { x: 0.15, y: 0, z: 0.109 },   // Tweak position to align on second PCB
+        { x: 0.0011, y: 0.0011, z: 0.0011 },
+        { x: -1.57, y: 0, z: 0 },
+        0x333333,  // Dark gray; change color as needed
+        'Relay_001'
+      )
+    ]).then(() => updateRaycastTargets());
+  });
+
   // USB-C Receptacle
   loadAdditionalComponent(
     'USB-C.glb',

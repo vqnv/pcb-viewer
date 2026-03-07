@@ -256,6 +256,61 @@ export function loadAdditionalComponent(componentPath, position, scale, rotation
   );
 }
 
+// Load a component onto the secondary PCB (e.g. Arduino Nano) so it rotates with that board and is clickable.
+// Returns a Promise that resolves when the component is added (so callers can run updateRaycastTargets).
+export function loadComponentOntoSecondaryPCB(componentPath, position, scale, rotation, color = 0xcccccc, componentName = 'Component') {
+  return new Promise((resolve, reject) => {
+    const loader = new GLTFLoader();
+    loader.load(
+      componentPath,
+      function (glb) {
+        console.log('Secondary PCB component loaded:', componentPath);
+        const component = glb.scene;
+        component.scale.set(scale.x, scale.y, scale.z);
+        component.position.set(position.x, position.y, position.z);
+        component.rotation.set(rotation.x, rotation.y, rotation.z);
+        component.traverse((child) => {
+          if (child.isMesh) {
+            child.name = componentName;
+            const materialKey = `${color}_0.85_0.15`;
+            let material = materialCache.get(materialKey);
+            if (!material) {
+              material = new THREE.MeshStandardMaterial({
+                color: color,
+                metalness: 0.85,
+                roughness: 0.15
+              });
+              materialCache.set(materialKey, material);
+            }
+            child.material = material;
+            child.userData.originalMaterial = child.material;
+            child.layers.set(1);
+            const baseName = getBaseName(componentName);
+            if (!componentGroups[baseName]) {
+              componentGroups[baseName] = [];
+            }
+            componentGroups[baseName].push(child);
+          }
+        });
+        const target = secondaryPCB && secondaryPCB.children && secondaryPCB.children[0] ? secondaryPCB.children[0] : secondaryPCB;
+        if (target) {
+          target.add(component);
+          console.log('Component added to secondary PCB at position:', position);
+          resolve();
+        } else {
+          console.error('Secondary PCB not available for component.');
+          reject(new Error('Secondary PCB not available'));
+        }
+      },
+      function (progress) { console.log('Loading secondary component:', progress); },
+      function (error) {
+        console.error('Error loading secondary component:', error);
+        reject(error);
+      }
+    );
+  });
+}
+
 // Load a secondary PCB model (for displaying multiple PCBs)
 export function loadSecondaryPCB(modelPath, offsetX = 300) {
   return new Promise((resolve, reject) => {

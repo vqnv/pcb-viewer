@@ -5,7 +5,7 @@ import { componentGroups } from './modelLoader.js';
 
 export let porscheGroup = null;
 
-const PORSCHE_POSITION = new THREE.Vector3(0, 10, 0);
+const PORSCHE_POSITION = new THREE.Vector3(-5, 7, 0);
 const PORSCHE_SCALE = 1.5; // Car model is big – change this to resize (e.g. 0.02 = smaller)
 
 export function initPorsche() {
