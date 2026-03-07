@@ -9,28 +9,47 @@ controls.autoRotateSpeed = 0.15;
 
 // Track if user is manually interacting (not animation)
 let manualInteraction = false;
+// Only resume rotation after a real drag (not a tap) — avoids phone tap restarting rotation
+let pointerDownX = 0;
+let pointerDownY = 0;
+const DRAG_THRESHOLD_PX = 6;
+let didDrag = false;
 
-// Function to reset manual interaction flag (called when animation starts)
 export function resetManualInteraction() {
   manualInteraction = false;
 }
 
-// When user starts to manually drag/move camera
+const el = renderer.domElement;
+el.addEventListener('pointerdown', (e) => {
+  pointerDownX = e.clientX;
+  pointerDownY = e.clientY;
+  didDrag = false;
+});
+el.addEventListener('pointermove', (e) => {
+  if (e.buttons === 0) return;
+  const dx = e.clientX - pointerDownX;
+  const dy = e.clientY - pointerDownY;
+  if (dx * dx + dy * dy >= DRAG_THRESHOLD_PX * DRAG_THRESHOLD_PX) {
+    didDrag = true;
+  }
+});
+
 controls.addEventListener('start', () => {
-  // Only set flag if controls are enabled (i.e., not during programmatic animation)
   if (controls.enabled) {
     manualInteraction = true;
   }
 });
 
-// When user finishes manual interaction, resume rotation
+// Only resume rotation when they actually dragged, not on tap (fixes phone behaviour)
 controls.addEventListener('end', () => {
-  if (manualInteraction) {
+  if (manualInteraction && didDrag) {
     manualInteraction = false;
     import('./modelLoader.js').then(({ setIsRotating }) => {
       setIsRotating(true);
       controls.autoRotate = true;
     });
+  } else if (manualInteraction) {
+    manualInteraction = false;
   }
 });
 

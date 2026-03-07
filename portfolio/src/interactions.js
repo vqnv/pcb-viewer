@@ -244,18 +244,19 @@ function onMouseDown(event) {
       console.log("Clicked PCB - animation only");
     }
   } else {
-    // Clicked empty space → deselect
+    // Clicked empty space → deselect and resume rotation
     if (selectedObject) {
       resetHighlight(componentGroups, selectedObject);
       restoreAllBrightness(componentGroups);
       selectedObject = null;
     }
-    // Clear hover too
     if (hoveredObject) {
       removeHoverEffect(componentGroups, hoveredObject);
       hoveredObject = null;
     }
     hideInfoPanel();
+    setIsRotating(true);
+    controls.autoRotate = true;
   }
 }
 
