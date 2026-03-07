@@ -6,6 +6,10 @@ import { animateCameraToTopDown } from './cameraAnimation.js';
 import { applyHighlight, resetHighlight, dimOtherComponents, restoreAllBrightness, applyHoverEffect, removeHoverEffect } from './highlighting.js';
 import { showInfoPanel, hideInfoPanel } from './uiPanel.js';
 import { getBaseName, getComponentGroup } from './utils.js';
+import { aboutCubeGroup } from './aboutCube.js';
+import { gearGroup } from './gear.js';
+import { porscheGroup } from './porsche.js';
+import { musicalNoteGroup } from './musicalNote.js';
 
 const raycaster = new THREE.Raycaster();
 raycaster.layers.set(1);
@@ -19,14 +23,15 @@ const hoverCheckInterval = 75; // Reduced throttle for better hover responsivene
 // Cache for raycasting - only check layer 1 objects
 let raycastTargets = [];
 
-// Update raycast targets when models load
+// Update raycast targets when models load (exclude merged zone meshes to reduce lag)
 export function updateRaycastTargets() {
   raycastTargets = [];
   scene.children.forEach(obj => {
     obj.traverse(child => {
-      if (child.isMesh && child.layers.test(camera.layers)) {
-        raycastTargets.push(child);
-      }
+      if (!child.isMesh || !child.layers.test(camera.layers)) return;
+      const name = (child.name || '').toLowerCase();
+      if (name.includes('mergedtracks')) return; // skip big zone mesh(es)
+      raycastTargets.push(child);
     });
   });
   console.log(`Raycast optimization: ${raycastTargets.length} targets cached`);
@@ -39,11 +44,119 @@ function onMouseDown(event) {
   );
 
   raycaster.setFromCamera(coords, camera);
-  const intersections = raycaster.intersectObjects(scene.children, true);
+  const intersections = raycastTargets.length > 0
+    ? raycaster.intersectObjects(raycastTargets, false)
+    : raycaster.intersectObjects(scene.children, true);
 
   if (intersections.length > 0) {
     const clickedMesh = intersections[0].object;
-    
+    const name = getBaseName(clickedMesh.name) || clickedMesh.name || '';
+
+    // About cube: animate to cube then open About Me panel
+    if ((name === 'AboutCube' || clickedMesh.name === 'AboutCube') && aboutCubeGroup) {
+      setIsRotating(false);
+      controls.autoRotate = false;
+      resetManualInteraction();
+      if (selectedObject) {
+        resetHighlight(componentGroups, selectedObject);
+        restoreAllBrightness(componentGroups);
+      }
+      if (hoveredObject) {
+        removeHoverEffect(componentGroups, hoveredObject);
+        hoveredObject = null;
+      }
+      selectedObject = 'AboutCube';
+      applyHighlight(componentGroups, 'AboutCube');
+      dimOtherComponents(componentGroups, 'AboutCube');
+      hideInfoPanel();
+      animateCameraToTopDown(camera, controls, aboutCubeGroup);
+      setTimeout(() => {
+        document.getElementById('about-panel').classList.add('active');
+      }, 900);
+      return;
+    }
+
+    // Gear: animate to gear then open Skills panel
+    if ((name === 'Gear' || clickedMesh.name === 'Gear') && gearGroup) {
+      setIsRotating(false);
+      controls.autoRotate = false;
+      resetManualInteraction();
+      if (selectedObject) {
+        resetHighlight(componentGroups, selectedObject);
+        restoreAllBrightness(componentGroups);
+      }
+      if (hoveredObject) {
+        removeHoverEffect(componentGroups, hoveredObject);
+        hoveredObject = null;
+      }
+      selectedObject = 'Gear';
+      applyHighlight(componentGroups, 'Gear');
+      dimOtherComponents(componentGroups, 'Gear');
+      hideInfoPanel();
+      animateCameraToTopDown(camera, controls, gearGroup);
+      setTimeout(() => {
+        document.getElementById('skills-panel').classList.add('active');
+      }, 900);
+      return;
+    }
+
+    // Porsche: animate to car then open RC car story panel
+    if ((name === 'Porsche' || clickedMesh.name === 'Porsche') && porscheGroup) {
+      setIsRotating(false);
+      controls.autoRotate = false;
+      resetManualInteraction();
+      if (selectedObject) {
+        resetHighlight(componentGroups, selectedObject);
+        restoreAllBrightness(componentGroups);
+      }
+      if (hoveredObject) {
+        removeHoverEffect(componentGroups, hoveredObject);
+        hoveredObject = null;
+      }
+      selectedObject = 'Porsche';
+      applyHighlight(componentGroups, 'Porsche');
+      dimOtherComponents(componentGroups, 'Porsche');
+      hideInfoPanel();
+      animateCameraToTopDown(camera, controls, porscheGroup);
+      setTimeout(() => {
+        document.getElementById('story-panel').classList.add('active');
+      }, 900);
+      return;
+    }
+
+    // Musical note: animate to note then open Music panel (play favourite song)
+    function isPartOfNote(obj) {
+      let o = obj;
+      while (o) {
+        if (o === musicalNoteGroup || o.userData?.isMusicalNote) return true;
+        o = o.parent;
+      }
+      return false;
+    }
+    const noteIsFirstHit = musicalNoteGroup && intersections.length > 0 && isPartOfNote(intersections[0].object);
+    if (noteIsFirstHit) {
+      setIsRotating(false);
+      controls.autoRotate = false;
+      resetManualInteraction();
+      if (selectedObject) {
+        resetHighlight(componentGroups, selectedObject);
+        restoreAllBrightness(componentGroups);
+      }
+      if (hoveredObject) {
+        removeHoverEffect(componentGroups, hoveredObject);
+        hoveredObject = null;
+      }
+      selectedObject = 'MusicalNote';
+      applyHighlight(componentGroups, 'MusicalNote');
+      dimOtherComponents(componentGroups, 'MusicalNote');
+      hideInfoPanel();
+      animateCameraToTopDown(camera, controls, musicalNoteGroup);
+      setTimeout(() => {
+        document.getElementById('music-panel').classList.add('active');
+      }, 900);
+      return;
+    }
+
     // Determine which PCB was clicked
     let targetPCB = gltfModel;
     let current = clickedMesh;
@@ -60,18 +173,30 @@ function onMouseDown(event) {
     }
     console.log('Clicked PCB:', targetPCB === gltfModel ? 'Main PCB' : 'Secondary PCB', 'Position:', targetPCB.position);
     
-    let name = getBaseName(clickedMesh.name);   
     const clickedObject = getComponentGroup(clickedMesh, targetPCB);
     
-    // Check if clicked object is the PCB (greenish color or name contains PCB)
+    // Check if clicked object is the PCB (greenish) or yellow zones (tracks/pads)
     let isPCB = false;
-    
-    // Check by name first (most reliable)
+    let isZone = false;
+
+    // Yellow zones / merged tracks - unclickable
+    if (name === 'MergedTracks' || name.includes('MergedTracks')) {
+      isZone = true;
+    }
+    if (!isZone && clickedMesh.material && clickedMesh.material.color) {
+      const hex = clickedMesh.material.color.getHex();
+      const r = (hex >> 16) & 0xff;
+      const g = (hex >> 8) & 0xff;
+      const b = hex & 0xff;
+      // Gold/yellow zone color (e.g. 0xFFD700)
+      if (r > 200 && g > 150 && b < 100) isZone = true;
+    }
+
+    // Check by name for PCB
     if (name.includes('PCB') || name.includes('pcb')) {
       isPCB = true;
     }
-    
-    // Also check by color
+    // Also check by color (greenish)
     if (!isPCB && clickedMesh.material && clickedMesh.material.color) {
       const hex = clickedMesh.material.color.getHex();
       const r = (hex >> 16) & 0xff;
@@ -86,8 +211,8 @@ function onMouseDown(event) {
     resetManualInteraction(); // Clear any manual interaction flag before animation
     animateCameraToTopDown(camera, controls, targetPCB);
     
-    // Only highlight and dim if it's NOT the PCB
-    if (!isPCB) {
+    // Only highlight and dim if it's NOT the PCB and NOT yellow zones
+    if (!isPCB && !isZone) {
       if (selectedObject === name) return;
       if (selectedObject) {
         resetHighlight(componentGroups, selectedObject);
@@ -104,7 +229,7 @@ function onMouseDown(event) {
       showInfoPanel(name);
       console.log("Selected:", name);
     } else {
-      // Clicked PCB - clear selection
+      // Clicked PCB or zone - clear selection, animation only
       if (selectedObject) {
         resetHighlight(componentGroups, selectedObject);
         restoreAllBrightness(componentGroups);
@@ -149,15 +274,27 @@ function onMouseMove(event) {
   );
 
   raycaster.setFromCamera(coords, camera);
-  // Use recursive raycasting to detect nested meshes
-  const intersections = raycaster.intersectObjects(scene.children, true);
+  const intersections = raycastTargets.length > 0
+    ? raycaster.intersectObjects(raycastTargets, false)
+    : raycaster.intersectObjects(scene.children, true);
 
   if (intersections.length > 0) {
     let name = getBaseName(intersections[0].object.name);
     const clickedMesh = intersections[0].object;
     
-    // Check if it's PCB
+    // Check if it's PCB or yellow zone (unclickable)
     let isPCB = false;
+    let isZone = false;
+    if (name === 'MergedTracks' || name.includes('MergedTracks')) {
+      isZone = true;
+    }
+    if (!isZone && clickedMesh.material && clickedMesh.material.color) {
+      const hex = clickedMesh.material.color.getHex();
+      const r = (hex >> 16) & 0xff;
+      const g = (hex >> 8) & 0xff;
+      const b = hex & 0xff;
+      if (r > 200 && g > 150 && b < 100) isZone = true;
+    }
     if (name.includes('PCB') || name.includes('pcb')) {
       isPCB = true;
     }
@@ -169,8 +306,8 @@ function onMouseMove(event) {
       isPCB = (g > r && g > b && g > 20);
     }
 
-    // Only hover if not PCB and not already selected
-    if (!isPCB && name !== selectedObject) {
+    // Only hover if not PCB, not zone, and not already selected
+    if (!isPCB && !isZone && name !== selectedObject) {
       if (hoveredObject !== name) {
         // Remove previous hover
         if (hoveredObject) {

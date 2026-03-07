@@ -12,7 +12,10 @@
       /* Critical CSS to prevent FOUC */
       body { margin: 0; overflow: hidden; background: #000; }
       .info-panel { position: fixed; right: -400px; }
-      .modal-panel { position: fixed; opacity: 0; pointer-events: none; transform: translate(-50%, -50%) scale(0); }
+      .modal-overlay { position: fixed; inset: 0; opacity: 0; pointer-events: none; display: flex; align-items: center; justify-content: center; z-index: 2000; }
+.modal-overlay.active { opacity: 1; pointer-events: all; }
+.modal-panel { transform: scale(0); transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+.modal-overlay.active .modal-panel { transform: scale(1); }
       #bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; }
     </style>
   </head>
@@ -55,9 +58,10 @@
     </div>
 
     <!-- About Me Panel -->
-    <div id="about-panel" class="modal-panel">
-      <button id="close-about" class="close-btn">&times;</button>
-      <div class="panel-content">
+    <div id="about-panel" class="modal-overlay">
+      <div class="modal-panel">
+        <button id="close-about" class="close-btn">&times;</button>
+        <div class="panel-content">
         <h2>ABOUT ME</h2>
         
         <div class="contact-links">
@@ -84,10 +88,50 @@
           </p>
         </div>
       </div>
+      </div>
+    </div>
+
+    <!-- RC Car Story Panel (same layout as About Me) -->
+    <div id="story-panel" class="modal-overlay">
+      <div class="modal-panel">
+        <button id="close-story" class="close-btn">&times;</button>
+        <div class="panel-content">
+        <h2>THE RC CAR STORY</h2>
+        <div class="info-section">
+          <p class="about-text">
+            Here’s the story of how I almost blew up my RC car project…
+          </p>
+          <p class="about-text">
+            Like, you don’t really need an introduction to this story. I wired up my RC car, felt extremely confident in my engineering abilities, and flipped the main power switch like a movie scene where the machine finally comes to life. Instead, there was a tiny spark and the switch basically sacrificed itself instantly because I had the polarity reversed. For about two seconds I just stared at it like, “there’s no way that just happened.” Turns out electricity cares a lot about which way current flows. After replacing the switch and fixing the wiring, the car finally worked. Lesson learned: confidence is great, but double-checking polarity is better.
+          </p>
+        </div>
+        <div class="story-panel-image">
+          <img src="/monkey.jpeg" alt="" />
+        </div>
+      </div>
+      </div>
+    </div>
+
+    <!-- Music Panel (favourite song – play from site) -->
+    <div id="music-panel" class="modal-overlay">
+      <div class="modal-panel">
+        <button id="close-music" class="close-btn">&times;</button>
+        <div class="panel-content">
+        <h2>MY JAM</h2>
+        <p class="about-text">Island in the Sun – Weezer. Play it below.</p>
+        <div class="music-player-wrap">
+          <audio id="fav-song" controls preload="metadata">
+            <source src="/island_in_the_sun.mp3" type="audio/mpeg" />
+            Your browser doesn’t support the audio element.
+          </audio>
+        </div>
+      </div>
+      </div>
     </div>
 
     <!-- Projects Panel -->
-    <div id="projects-panel" class="modal-panel projects-modal">
+    <div id="projects-panel" class="modal-overlay">
+      <div class="modal-panel projects-modal">
       <button id="close-projects" class="close-btn">&times;</button>
       <div class="panel-content">
         <h2>PROJECTS</h2>
@@ -191,10 +235,12 @@
           </div>
         </div>
       </div>
+      </div>
     </div>
 
     <!-- Experience Panel -->
-    <div id="experience-panel" class="modal-panel experience-modal">
+    <div id="experience-panel" class="modal-overlay">
+      <div class="modal-panel experience-modal">
       <button id="close-experience" class="close-btn">&times;</button>
       <div class="panel-content">
         <h2>EXPERIENCE</h2>
@@ -266,10 +312,12 @@
           </div>
         </div>
       </div>
+      </div>
     </div>
 
     <!-- Skills Panel -->
-    <div id="skills-panel" class="modal-panel skills-modal">
+    <div id="skills-panel" class="modal-overlay">
+      <div class="modal-panel skills-modal">
       <button id="close-skills" class="close-btn">&times;</button>
       <div class="panel-content">
         <h2>TECHNICAL SKILLS</h2>
@@ -300,10 +348,12 @@
           <p class="skills-list">VS Code, Git</p>
         </div>
       </div>
+      </div>
     </div>
 
     <!-- Project Detail Modal -->
-    <div id="project-detail-modal" class="modal-panel project-detail-modal">
+    <div id="project-detail-modal" class="modal-overlay">
+      <div class="modal-panel project-detail-modal">
       <button id="close-project-detail" class="close-btn">&times;</button>
       <div class="panel-content">
         <h2 id="project-detail-title">Project Title</h2>
@@ -320,6 +370,7 @@
             <span class="btn-icon">💻</span> GitHub
           </a>
         </div>
+      </div>
       </div>
     </div>
 

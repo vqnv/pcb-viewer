@@ -1,26 +1,28 @@
 import * as THREE from 'three';
 import { scene } from './sceneSetup.js';
 
-// Key light
-const keyLight = new THREE.PointLight(0xffffff);
-keyLight.position.set(20, 20, 30);
-keyLight.intensity = 500; // Reduced for performance
+// Sun light – strong directional for shiny highlights (like sunlight)
+const sunLight = new THREE.DirectionalLight(0xfff8eb, 2.2);
+sunLight.position.set(40, 60, 50);
+scene.add(sunLight);
 
-// Fill light
-const fillLight = new THREE.PointLight(0xffffff);
-fillLight.position.set(-20, 10, 30);
-fillLight.intensity = 500; // Reduced for performance
+const sunLight2 = new THREE.DirectionalLight(0xfff0d0, 0.8);
+sunLight2.position.set(-25, 35, 45);
+scene.add(sunLight2);
 
-// Back light
-const backLight = new THREE.PointLight(0xffffff);
-backLight.position.set(0, -20, -20);
-backLight.intensity = 500; // Reduced for performance
+// Fill – soft so shadows aren’t black
+const fillLight = new THREE.DirectionalLight(0xe8f4ff, 0.55);
+fillLight.position.set(-20, 20, 30);
+scene.add(fillLight);
 
-// Ambient light
-const ambientLight = new THREE.AmbientLight(0xffffff, 0.1); // Increased to compensate
+// Rim / back – gives edge shine
+const rimLight = new THREE.DirectionalLight(0xffffff, 0.6);
+rimLight.position.set(0, -10, -40);
+scene.add(rimLight);
 
-// Add all lights to scene
-scene.add(keyLight, fillLight, backLight, ambientLight);
+// Ambient – base visibility
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
+scene.add(ambientLight);
 
 // Stars - optimized for performance
 const starGeometry = new THREE.SphereGeometry(0.25, 6, 4); // Further reduced segments

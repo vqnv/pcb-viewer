@@ -9,13 +9,33 @@ export function animateCameraToTopDown(camera, controls, targetModel) {
   // Disable controls during animation
   controls.enabled = false;
   
-  // Use the stored visual center from when the model was loaded
-  const modelCenter = targetModel?.userData?.visualCenter || new THREE.Vector3(0, 0, 0);
+  // Use stored visual center or world position so camera goes to the right place
+  const modelCenter = new THREE.Vector3(0, 0, 0);
+  if (targetModel) {
+    targetModel.updateMatrixWorld(true);
+    if (targetModel.name === 'MusicalNoteGroup') {
+      const box = new THREE.Box3().setFromObject(targetModel);
+      box.getCenter(modelCenter);
+    } else if (targetModel.userData?.visualCenter) {
+      modelCenter.copy(targetModel.userData.visualCenter);
+    } else {
+      targetModel.getWorldPosition(modelCenter);
+    }
+  }
   
-  console.log('Animating to PCB visual center:', modelCenter);
+  console.log('Animating to target:', targetModel?.name, 'center:', modelCenter);
   
-  // Target position: slightly angled top-down view relative to model center
-  const targetPosition = new THREE.Vector3(modelCenter.x, modelCenter.y + 12, modelCenter.z + 3);
+  // Target position: offset from model center. For note, put camera directly in front so note is dead center
+  const isNote = targetModel?.name === 'MusicalNoteGroup';
+  let targetPosition;
+  if (isNote) {
+    const dist =25;
+    const dir = new THREE.Vector3(0, 0.4, 1).normalize();
+    targetPosition = modelCenter.clone().add(dir.multiplyScalar(dist));
+  } else {
+    const dy = 12, dz = 3;
+    targetPosition = new THREE.Vector3(modelCenter.x, modelCenter.y + dy, modelCenter.z + dz);
+  }
   const targetLookAt = modelCenter.clone();
   
   // Store starting values
@@ -25,13 +45,13 @@ export function animateCameraToTopDown(camera, controls, targetModel) {
   // Force controls target to the model center immediately
   controls.target.copy(modelCenter);
   
-  // Store starting model rotation if model exists
-  const startModelRotation = targetModel ? {
+  // Don't rotate the note – keep it in place so it stays centered in frame
+  const animateModelRotation = targetModel && targetModel.name !== 'MusicalNoteGroup';
+  const startModelRotation = animateModelRotation ? {
     x: targetModel.rotation.x,
     y: targetModel.rotation.y,
     z: targetModel.rotation.z
   } : null;
-  
   const targetModelRotation = { x: 0, y: 0, z: 0 };
   
   // Create target camera orientation
@@ -59,8 +79,8 @@ export function animateCameraToTopDown(camera, controls, targetModel) {
     // Smoothly interpolate camera rotation
     camera.quaternion.slerpQuaternions(startQuaternion, targetQuaternion, eased);
     
-    // Smoothly animate model rotation to flat orientation
-    if (targetModel && startModelRotation) {
+    // Smoothly animate model rotation to flat orientation (skip for note so it stays centered)
+    if (targetModel && startModelRotation && animateModelRotation) {
       targetModel.rotation.x = startModelRotation.x + (targetModelRotation.x - startModelRotation.x) * eased;
       targetModel.rotation.y = startModelRotation.y + (targetModelRotation.y - startModelRotation.y) * eased;
       targetModel.rotation.z = startModelRotation.z + (targetModelRotation.z - startModelRotation.z) * eased;

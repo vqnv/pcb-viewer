@@ -1,4 +1,10 @@
 {
+  "name": "pcb-viewer",
+  "private": true,
+  "scripts": {
+    "dev": "cd portfolio && npm run dev",
+    "start": "cd portfolio && npm run dev"
+  },
   "dependencies": {
     "three": "^0.183.2"
   }

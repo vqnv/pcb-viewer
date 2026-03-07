@@ -8,6 +8,10 @@ const experiencePanel = document.getElementById('experience-panel');
 const closeExperienceBtn = document.getElementById('close-experience');
 const skillsPanel = document.getElementById('skills-panel');
 const closeSkillsBtn = document.getElementById('close-skills');
+const storyPanel = document.getElementById('story-panel');
+const closeStoryBtn = document.getElementById('close-story');
+const musicPanel = document.getElementById('music-panel');
+const closeMusicBtn = document.getElementById('close-music');
 
 // About Me button handler
 const aboutBtn = document.querySelector('[data-section="about"]');
@@ -66,6 +70,18 @@ if (closeSkillsBtn) {
   });
 }
 
+if (closeStoryBtn) {
+  closeStoryBtn.addEventListener('click', () => {
+    storyPanel.classList.remove('active');
+  });
+}
+
+if (closeMusicBtn) {
+  closeMusicBtn.addEventListener('click', () => {
+    musicPanel.classList.remove('active');
+  });
+}
+
 // Close on click outside
 aboutPanel.addEventListener('click', (e) => {
   if (e.target === aboutPanel) {
@@ -88,6 +104,18 @@ experiencePanel.addEventListener('click', (e) => {
 skillsPanel.addEventListener('click', (e) => {
   if (e.target === skillsPanel) {
     skillsPanel.classList.remove('active');
+  }
+});
+
+storyPanel.addEventListener('click', (e) => {
+  if (e.target === storyPanel) {
+    storyPanel.classList.remove('active');
+  }
+});
+
+musicPanel.addEventListener('click', (e) => {
+  if (e.target === musicPanel) {
+    musicPanel.classList.remove('active');
   }
 });
 

@@ -28,6 +28,16 @@ import './navigation.js';
 // Start animation loop
 import { animate } from './animation.js';
 
+// About cube and gear – add to scene and refresh raycast when ready
+import { initAboutCube } from './aboutCube.js';
+import { initGear } from './gear.js';
+import { initPorsche } from './porsche.js';
+import { initMusicalNote } from './musicalNote.js';
+initAboutCube().then(() => updateRaycastTargets());
+initGear().then(() => updateRaycastTargets());
+initPorsche().then(() => updateRaycastTargets());
+initMusicalNote().then(() => updateRaycastTargets());
+
 // Load the 3D model
 loadModel('usbmouseconnectorgeneric.glb').then(() => {
   console.log('PCB loaded, now loading additional components...');

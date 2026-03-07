@@ -12,6 +12,22 @@ export let isRotating = true;
 // Material cache for performance - reuse materials instead of creating new ones
 const materialCache = new Map();
 
+/** Returns true if mesh looks like a track/zone/pad (by name or copper/yellow color). */
+function isTrackOrZoneMesh(child) {
+  const meshName = child.name.toLowerCase();
+  const nameMatch = meshName.includes('track') || meshName.includes('zone') ||
+    meshName.includes('pad') || meshName.includes('via') || meshName.includes('trace') ||
+    meshName.includes('copper') || meshName.includes('fill') || meshName.includes('polygon') ||
+    meshName.includes('pour') || meshName.includes('signal') || meshName.includes('plane') ||
+    meshName.includes('pad_') || meshName.includes('track_');
+  if (nameMatch) return true;
+  // Fallback: merge by color (gold/copper/yellow) so unnamed zone meshes get merged
+  if (!child.material || !child.material.color) return false;
+  const hex = child.material.color.getHex();
+  const r = (hex >> 16) & 0xff, g = (hex >> 8) & 0xff, b = hex & 0xff;
+  return r > 180 && g > 140 && b < 120;
+}
+
 export function setIsRotating(value) {
   isRotating = value;
 }
@@ -26,7 +42,7 @@ export function loadModel(modelPath) {
         console.log('GLB model loaded successfully:', glb);
         const model = glb.scene;
         
-        // Collect track/zone/pad meshes for merging (by name only, preserving their yellow/copper color)
+        // Collect track/zone/pad meshes for merging (by name or copper/yellow color)
         const trackGeometries = [];
         const trackMeshesToRemove = [];
         let trackColor = null; // We'll use the first track's color
@@ -34,21 +50,11 @@ export function loadModel(modelPath) {
         model.traverse((child) => {
           if (child.isMesh) {
             const baseName = getBaseName(child.name);
-            const meshName = child.name.toLowerCase();
-            
-            // Check if this is a track/zone/pad by NAME patterns only
-            const isTrack = meshName.includes('track') || 
-                           meshName.includes('zone') || 
-                           meshName.includes('pad') ||
-                           meshName.includes('via') ||
-                           meshName.includes('trace');
-            
-            if (isTrack) {
-              // This is a track - collect for merging and preserve its color
-              if (!trackColor && child.material.color) {
-                trackColor = child.material.color.getHex(); // Save the first track's color
+
+            if (isTrackOrZoneMesh(child)) {
+              if (!trackColor && child.material && child.material.color) {
+                trackColor = child.material.color.getHex();
               }
-              
               const geometry = child.geometry.clone();
               child.updateWorldMatrix(true, false);
               geometry.applyMatrix4(child.matrixWorld);
@@ -90,13 +96,13 @@ export function loadModel(modelPath) {
               }
               
               // Reuse materials from cache for better performance
-              const materialKey = `${materialColor}_0.6_0.4`;
+              const materialKey = `${materialColor}_0.85_0.15`;
               let material = materialCache.get(materialKey);
               if (!material) {
                 material = new THREE.MeshStandardMaterial({
                   color: materialColor,
-                  metalness: 0.6,
-                  roughness: 0.4
+                  metalness: 0.85,
+                  roughness: 0.15
                 });
                 materialCache.set(materialKey, material);
               }
@@ -122,9 +128,9 @@ export function loadModel(modelPath) {
           const mergedMesh = new THREE.Mesh(
             mergedGeometry,
             new THREE.MeshStandardMaterial({
-              color: trackColor || 0xFFD700, // Use original track color or default gold
-              metalness: 0.6,
-              roughness: 0.4
+              color: trackColor || 0xFFD700,
+              metalness: 0.85,
+              roughness: 0.15
             })
           );
           
@@ -204,14 +210,14 @@ export function loadAdditionalComponent(componentPath, position, scale, rotation
           // Set name for identification
           child.name = componentName;
           
-          // Reuse material from cache
-          const materialKey = `${color}_0.6_0.4`;
+          // Reuse material from cache (shinier)
+          const materialKey = `${color}_0.85_0.15`;
           let material = materialCache.get(materialKey);
           if (!material) {
             material = new THREE.MeshStandardMaterial({
               color: color,
-              metalness: 0.6,
-              roughness: 0.4
+              metalness: 0.85,
+              roughness: 0.15
             });
             materialCache.set(materialKey, material);
           }
@@ -261,7 +267,7 @@ export function loadSecondaryPCB(modelPath, offsetX = 300) {
         console.log('Secondary PCB loaded:', modelPath);
         const model = glb.scene;
         
-        // Collect track/zone/pad meshes for merging (by name only)
+        // Collect track/zone/pad meshes for merging (by name or copper/yellow color)
         const trackGeometries = [];
         const trackMeshesToRemove = [];
         let trackColor = null;
@@ -269,21 +275,11 @@ export function loadSecondaryPCB(modelPath, offsetX = 300) {
         model.traverse((child) => {
           if (child.isMesh) {
             const baseName = getBaseName(child.name);
-            const meshName = child.name.toLowerCase();
-            
-            // Check if this is a track/zone/pad by NAME patterns only
-            const isTrack = meshName.includes('track') || 
-                           meshName.includes('zone') || 
-                           meshName.includes('pad') ||
-                           meshName.includes('via') ||
-                           meshName.includes('trace');
-            
-            if (isTrack) {
-              // Collect for merging and preserve color
-              if (!trackColor && child.material.color) {
+
+            if (isTrackOrZoneMesh(child)) {
+              if (!trackColor && child.material && child.material.color) {
                 trackColor = child.material.color.getHex();
               }
-              
               const geometry = child.geometry.clone();
               child.updateWorldMatrix(true, false);
               geometry.applyMatrix4(child.matrixWorld);
@@ -325,13 +321,13 @@ export function loadSecondaryPCB(modelPath, offsetX = 300) {
               }
               
               // Reuse materials from cache for better performance
-              const materialKey = `${materialColor}_0.6_0.4`;
+              const materialKey = `${materialColor}_0.85_0.15`;
               let material = materialCache.get(materialKey);
               if (!material) {
                 material = new THREE.MeshStandardMaterial({
                   color: materialColor,
-                  metalness: 0.6,
-                  roughness: 0.4
+                  metalness: 0.85,
+                  roughness: 0.15
                 });
                 materialCache.set(materialKey, material);
               }
@@ -356,13 +352,13 @@ export function loadSecondaryPCB(modelPath, offsetX = 300) {
           
           const mergedMesh = new THREE.Mesh(
             mergedGeometry,
-            new THREE.MeshStandardMaterial({
+new THREE.MeshStandardMaterial({
               color: trackColor || 0xFFD700,
-              metalness: 0.6,
-              roughness: 0.4
+              metalness: 0.85,
+              roughness: 0.15
             })
           );
-          
+
           mergedMesh.layers.set(1);
           mergedMesh.name = 'MergedSecondaryTracks';
           mergedMesh.userData.originalMaterial = mergedMesh.material;
