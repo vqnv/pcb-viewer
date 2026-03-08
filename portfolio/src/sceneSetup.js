@@ -12,12 +12,12 @@ export const camera = new THREE.PerspectiveCamera(
 
 export const renderer = new THREE.WebGLRenderer({
   canvas: document.querySelector('#bg'),
-  antialias: window.devicePixelRatio < 2, // Only antialias on lower DPI screens
+  antialias: true, // Smoother edges on all devices including phone
   powerPreference: 'high-performance'
 });
 
-// Cap pixel ratio at 1.5 for better performance
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+// Use full device pixel ratio for maximum sharpness on phone (2x–3x); cap at 3 to avoid extreme GPU load
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 3));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = false; // Disable shadows for performance
 
@@ -39,5 +39,6 @@ scene.background = spaceTexture;
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 3));
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
