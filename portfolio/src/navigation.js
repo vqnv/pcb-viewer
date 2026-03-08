@@ -136,7 +136,7 @@ const projectData = {
     title: 'Mathora — AI-Driven Interactive Math Visualizer',
     image: '/projects/mathora.jpg',
     demo: '#', // do this dumbass
-    github: 'https://github.com/akashkothari2007/Mathora'
+    github: 'https://github.com/vqnv/Mathora'
   },
   'embedded-system': {
     title: 'Embedded RC Car',
