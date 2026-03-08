@@ -165,8 +165,8 @@ const projectData = {
   'pcb-visualizer': {
     title: 'PCB Visualizer',
     image: '/projects/pcb-visualizer.jpg',
-    demo: '#', //do this dumbass
-    github: '#' //do this dumbass
+    demo: 'https://youtu.be/P963GWlz1VM', //do this dumbass
+    github: 'https://github.com/vqnv/pcb-viewer' //do this dumbass
   }
 };
 
