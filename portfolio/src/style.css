@@ -63,15 +63,16 @@ main {
   background: #2d7a2e;
 }
 
-/* Component Info Panel */
+/* Component Info Panel – fully off-screen when not open so no green strip on mobile */
 .info-panel {
   position: fixed;
   top: 50%;
-  right: -400px; /* Hidden off screen */
+  right: -100vw; /* Fully hidden when closed on all viewports */
   transform: translateY(-50%);
   width: min(320px, calc(100vw - 2 * var(--panel-margin)));
   height: 75vh;
   max-height: 650px;
+  visibility: hidden;
   background: 
     repeating-linear-gradient(
       45deg,
@@ -94,6 +95,7 @@ main {
 
 .info-panel.active {
   right: max(var(--panel-margin), var(--safe-right));
+  visibility: visible;
 }
 
 .close-btn {
@@ -770,17 +772,25 @@ audio::-webkit-media-controls-enclosure {
 }
 
 @media (max-width: 600px) {
-  .nav-menu {
-    gap: 6px;
-    max-width: calc(100vw - 100px);
-  }
-  .nav-btn {
-    padding: 8px 10px;
-    font-size: 10px;
-  }
+  /* Header: name on own row, nav buttons on next row so they don’t cram together */
   .name-display {
     font-size: 13px;
     letter-spacing: 1px;
+    left: max(16px, var(--safe-left));
+    top: max(14px, var(--safe-top));
+    margin-right: 12px;
+  }
+  .nav-menu {
+    top: 52px; /* Below the name */
+    left: max(16px, var(--safe-left));
+    right: max(16px, var(--safe-right));
+    justify-content: flex-start;
+    gap: 8px;
+    max-width: none;
+  }
+  .nav-btn {
+    padding: 8px 12px;
+    font-size: 11px;
   }
   .hint-text {
     font-size: 9px;
@@ -827,19 +837,20 @@ audio::-webkit-media-controls-enclosure {
 }
 
 @media (max-width: 480px) {
-  .nav-menu {
-    top: max(12px, var(--safe-top));
-    right: max(12px, var(--safe-right));
-    gap: 4px;
-  }
-  .nav-btn {
-    font-size: 9px;
-    padding: 8px;
-  }
   .name-display {
     top: max(12px, var(--safe-top));
     left: max(12px, var(--safe-left));
     font-size: 12px;
+  }
+  .nav-menu {
+    top: 48px;
+    left: max(12px, var(--safe-left));
+    right: max(12px, var(--safe-right));
+    gap: 6px;
+  }
+  .nav-btn {
+    font-size: 9px;
+    padding: 8px 10px;
   }
   .hint-text {
     bottom: max(16px, var(--safe-bottom));
