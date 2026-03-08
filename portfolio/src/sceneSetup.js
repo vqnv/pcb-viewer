@@ -16,8 +16,8 @@ export const renderer = new THREE.WebGLRenderer({
   powerPreference: 'high-performance'
 });
 
-// Use full device pixel ratio for maximum sharpness on phone (2x–3x); cap at 3 to avoid extreme GPU load
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 3));
+// Sharp on phone; cap at 2 for good balance of quality vs perf
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = false; // Disable shadows for performance
 
@@ -39,6 +39,6 @@ scene.background = spaceTexture;
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 3));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
