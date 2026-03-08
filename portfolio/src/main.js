@@ -80,7 +80,7 @@ loadModel('usbmouseconnectorgeneric.glb').then(() => {
   // Microswitch 1 (black)
   loadAdditionalComponent(
     'Microswitch.glb',
-    { x: 0.155, y: 0.005, z: 0.047 },  // Near center, visible
+    { x: 0.121, y: 0.005, z: 0.047 },  // Near center, visible
     { x: 0.001, y: 0.001, z: 0.001 },  // Small scale
     { x: 0, y: 1.57, z: 0 },  
     0x000000,  // Black
@@ -90,10 +90,10 @@ loadModel('usbmouseconnectorgeneric.glb').then(() => {
   // Microswitch 2 (black)
   loadAdditionalComponent(
     'Microswitch.glb',
-    { x: 0.121, y: 0.005, z: 0.047 },  // Near center, visible
+    { x: 0.155, y: 0.005, z: 0.047 }, // Near center, visible
     { x: 0.001, y: 0.001, z: 0.001 },  // Small scale
     { x: 0, y: 1.57, z: 0 },  
-    0x000000,  // Black
+    0x000000,  // Black\
     'Microswitch_Right_001'
   );
   
