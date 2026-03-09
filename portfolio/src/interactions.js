@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { scene, camera, renderer } from './sceneSetup.js';
 import { controls, resetManualInteraction } from './controls.js';
-import { gltfModel, secondaryPCB, componentGroups, setIsRotating } from './modelLoader.js';
+import { gltfModel, secondaryPCB, componentGroups, isRotating, setIsRotating } from './modelLoader.js';
 import { animateCameraToTopDown } from './cameraAnimation.js';
 import { applyHighlight, resetHighlight, dimOtherComponents, restoreAllBrightness, applyHoverEffect, removeHoverEffect } from './highlighting.js';
 import { showInfoPanel, hideInfoPanel } from './uiPanel.js';
@@ -18,8 +18,44 @@ raycaster.params.Points = { threshold: 0.5 }; // Optimize raycasting
 
 let selectedObject = null;
 let hoveredObject = null;
+let currentHoverKey = null;
 let lastHoverCheck = 0;
 const hoverCheckInterval = 75; // Reduced throttle for better hover responsiveness
+
+// Hover speech bubble elements
+const hoverBubbleEl = document.getElementById('hover-bubble');
+const hoverBubbleTextEl = document.getElementById('hover-bubble-text');
+
+function getHoverLabel(key) {
+  const specials = {
+    AboutCube: 'About me',
+    Gear: 'Skills',
+    Porsche: 'RC car story',
+    MusicalNote: 'Favourite song',
+    MainPCB: 'Mouse HID PCB',
+    SecondaryPCB: 'Ambient light PCB'
+  };
+  if (specials[key]) return specials[key];
+  return '';
+}
+
+function showHoverBubble(key, clientX, clientY) {
+  if (!hoverBubbleEl || !hoverBubbleTextEl) return;
+  const label = getHoverLabel(key);
+  if (!label) {
+    hoverBubbleEl.classList.remove('active');
+    return;
+  }
+  hoverBubbleTextEl.textContent = label;
+  hoverBubbleEl.style.left = `${clientX}px`;
+  hoverBubbleEl.style.top = `${clientY - 16}px`;
+  hoverBubbleEl.classList.add('active');
+}
+
+function hideHoverBubble() {
+  if (!hoverBubbleEl) return;
+  hoverBubbleEl.classList.remove('active');
+}
 
 // Cache for raycasting - only check layer 1 objects
 let raycastTargets = [];
@@ -271,9 +307,18 @@ document.addEventListener('mousedown', onMouseDown);
 function onMouseMove(event) {
   // Throttle hover checks
   const now = Date.now();
+  // Always keep bubble following the cursor for smoother motion while hovered
+  if (currentHoverKey) {
+    showHoverBubble(currentHoverKey, event.clientX, event.clientY);
+  }
   if (now - lastHoverCheck < hoverCheckInterval) return;
   lastHoverCheck = now;
-  
+
+  // When we're zoomed in / rotating is paused, don't show high-level labels
+  if (!isRotating) {
+    hideHoverBubble();
+    // Still let hover highlight logic run when clicking components, so continue
+  }
   const coords = new THREE.Vector2(
     (event.clientX / renderer.domElement.clientWidth) * 2 - 1,
     -((event.clientY / renderer.domElement.clientHeight) * 2 - 1)
@@ -312,7 +357,7 @@ function onMouseMove(event) {
       isPCB = (g > r && g > b && g > 20);
     }
 
-    // Only hover if not PCB, not zone, and not already selected
+    // Highlight hover state for components only (same as before)
     if (!isPCB && !isZone && name !== selectedObject) {
       if (hoveredObject !== name) {
         // Remove previous hover
@@ -322,15 +367,36 @@ function onMouseMove(event) {
         // Apply new hover
         hoveredObject = name;
         applyHoverEffect(componentGroups, hoveredObject);
-        document.body.style.cursor = 'pointer';
       }
     } else {
-      // Remove hover if over PCB or selected object
+      // Remove hover highlight if over PCB/zone/selected
       if (hoveredObject) {
         removeHoverEffect(componentGroups, hoveredObject);
         hoveredObject = null;
       }
+    }
+
+    // Decide which high-level object this hover should label (if any)
+    let hoverKey = null;
+    let current = clickedMesh;
+    while (current) {
+      if (current === aboutCubeGroup) { hoverKey = 'AboutCube'; break; }
+      if (current === gearGroup) { hoverKey = 'Gear'; break; }
+      if (current === porscheGroup) { hoverKey = 'Porsche'; break; }
+      if (current === musicalNoteGroup || current.userData?.isMusicalNote) { hoverKey = 'MusicalNote'; break; }
+      if (current === secondaryPCB) { hoverKey = 'SecondaryPCB'; break; }
+      if (current === gltfModel) { hoverKey = 'MainPCB'; break; }
+      current = current.parent;
+    }
+
+    if (isRotating && hoverKey) {
+      document.body.style.cursor = 'pointer';
+      currentHoverKey = hoverKey;
+      showHoverBubble(hoverKey, event.clientX, event.clientY);
+    } else {
       document.body.style.cursor = 'default';
+      currentHoverKey = null;
+      hideHoverBubble();
     }
   } else {
     // No intersection - remove hover
@@ -339,6 +405,8 @@ function onMouseMove(event) {
       hoveredObject = null;
     }
     document.body.style.cursor = 'default';
+    currentHoverKey = null;
+    hideHoverBubble();
   }
 }
 
