@@ -33,8 +33,7 @@ camera.position.set(-10, 5, 15);
 camera.layers.enable(1);
 camera.lookAt(0, 0, 0);
 
-const spaceTexture = new THREE.TextureLoader().load('space (1).jpg');
-scene.background = spaceTexture;
+scene.background = new THREE.Color(0x000000);
 
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
