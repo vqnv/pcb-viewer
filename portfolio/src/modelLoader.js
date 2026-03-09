@@ -12,6 +12,21 @@ export let isRotating = true;
 // Material cache for performance - reuse materials instead of creating new ones
 const materialCache = new Map();
 
+/** Disable screen-space outline for this material (OutlineEffect). */
+function setNoOutline(material) {
+  if (!material) return;
+  material.userData = material.userData || {};
+  material.userData.outlineParameters = { visible: false };
+}
+
+/** Enable screen-space outline for this material (OutlineEffect). */
+function setPCBOutline(material) {
+  if (!material) return;
+  material.userData = material.userData || {};
+  // Stronger outline for the PCB substrate so it reads clearly
+  material.userData.outlineParameters = { visible: true, color: [0, 0.85, 0], thickness: 0.008 };
+}
+
 /** Returns true if mesh looks like a track/zone/pad (by name or copper/yellow color). */
 function isTrackOrZoneMesh(child) {
   const meshName = child.name.toLowerCase();
@@ -67,8 +82,10 @@ export function loadModel(modelPath) {
               // Get the original color
               let materialColor;
               
-              // If it has a texture map, skip it
+              // If it has a texture map, keep it (but don't outline by default)
               if (child.material.map) {
+                const mats = Array.isArray(child.material) ? child.material : [child.material];
+                mats.forEach((m) => setNoOutline(m));
                 if (!componentGroups[baseName]) {
                   componentGroups[baseName] = [];
                 }
@@ -107,10 +124,15 @@ export function loadModel(modelPath) {
                 materialCache.set(materialKey, material);
               }
               child.material = material;
-              
+              // PCB substrate is outlined; components are not outlined by default
+              if (materialColor === 0x1a5c1a) {
+                setPCBOutline(material);
+              } else {
+                setNoOutline(material);
+              }
               // Save THIS material as the original for reset
               child.userData.originalMaterial = child.material;
-              
+
               if (!componentGroups[baseName]) {
                 componentGroups[baseName] = [];
               }
@@ -118,7 +140,7 @@ export function loadModel(modelPath) {
             }
           }
         });
-        
+
         // Merge all track geometries into one mesh with their original color
         if (trackGeometries.length > 0) {
           console.log(`Merging ${trackGeometries.length} track/zone/pad meshes into one...`);
@@ -136,6 +158,7 @@ export function loadModel(modelPath) {
           
           mergedMesh.layers.set(1);
           mergedMesh.name = 'MergedTracks';
+          setNoOutline(mergedMesh.material);
           mergedMesh.userData.originalMaterial = mergedMesh.material;
           
           // Remove old track meshes
@@ -222,7 +245,7 @@ export function loadAdditionalComponent(componentPath, position, scale, rotation
             materialCache.set(materialKey, material);
           }
           child.material = material;
-          
+          setNoOutline(material);
           // Save original material for reset
           child.userData.originalMaterial = child.material;
           
@@ -283,6 +306,7 @@ export function loadComponentOntoSecondaryPCB(componentPath, position, scale, ro
               materialCache.set(materialKey, material);
             }
             child.material = material;
+            setNoOutline(material);
             child.userData.originalMaterial = child.material;
             child.layers.set(1);
             const baseName = getBaseName(componentName);
@@ -347,8 +371,10 @@ export function loadSecondaryPCB(modelPath, offsetX = 300) {
               // Get the original color
               let materialColor;
               
-              // If it has a texture map, skip it
+              // If it has a texture map, keep it (but don't outline by default)
               if (child.material.map) {
+                const mats = Array.isArray(child.material) ? child.material : [child.material];
+                mats.forEach((m) => setNoOutline(m));
                 if (!componentGroups[baseName]) {
                   componentGroups[baseName] = [];
                 }
@@ -387,7 +413,12 @@ export function loadSecondaryPCB(modelPath, offsetX = 300) {
                 materialCache.set(materialKey, material);
               }
               child.material = material;
-              
+              // PCB substrate is outlined; components are not outlined by default
+              if (materialColor === 0x1a5c1a) {
+                setPCBOutline(material);
+              } else {
+                setNoOutline(material);
+              }
               // Save THIS material as the original for reset
               child.userData.originalMaterial = child.material;
               
@@ -416,6 +447,7 @@ new THREE.MeshStandardMaterial({
 
           mergedMesh.layers.set(1);
           mergedMesh.name = 'MergedSecondaryTracks';
+          setNoOutline(mergedMesh.material);
           mergedMesh.userData.originalMaterial = mergedMesh.material;
           
           trackMeshesToRemove.forEach(mesh => {

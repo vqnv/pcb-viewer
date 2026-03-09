@@ -21,7 +21,14 @@ export function initGear() {
           if (child.isMesh) {
             child.name = 'Gear';
             child.layers.set(1);
-            if (child.material) child.userData.originalMaterial = child.material;
+            if (child.material) {
+              child.userData.originalMaterial = child.material;
+              const mats = Array.isArray(child.material) ? child.material : [child.material];
+              mats.forEach((m) => {
+                if (!m) return;
+                m.userData.outlineParameters = { visible: true, color: [0, 0.6, 0], thickness: 0.004 };
+              });
+            }
             meshes.push(child);
           }
         });

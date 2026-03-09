@@ -27,6 +27,8 @@ scene.add(ambientLight);
 // Stars - optimized for performance
 const starGeometry = new THREE.SphereGeometry(0.25, 6, 4); // Further reduced segments
 const starMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff }); // Basic material doesn't need lighting calculations
+// Never outline stars
+starMaterial.userData.outlineParameters = { visible: false };
 
 function addStar() {
   const star = new THREE.Mesh(starGeometry, starMaterial);

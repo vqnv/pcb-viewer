@@ -23,6 +23,13 @@ export function initPorsche() {
             child.layers.set(1);
             if (child.material) child.userData.originalMaterial = child.material;
             meshes.push(child);
+            // Screen-space green outline (OutlineEffect) – only visible edges, no back outline
+            const mats = Array.isArray(child.material) ? child.material : [child.material];
+            mats.forEach((m) => {
+              if (m && !m.userData.outlineParameters) {
+                m.userData.outlineParameters = { visible: true, color: [0, 0.6, 0], thickness: 0.004 };
+              }
+            });
           }
         });
 

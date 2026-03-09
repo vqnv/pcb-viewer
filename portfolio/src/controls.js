@@ -1,5 +1,6 @@
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { camera, renderer } from './sceneSetup.js';
+import { setAllPCBComponentOutlinesVisible } from './outlineManager.js';
 
 export const controls = new OrbitControls(camera, renderer.domElement);
 controls.target.set(0, 0, 0);
@@ -47,6 +48,8 @@ controls.addEventListener('end', () => {
     import('./modelLoader.js').then(({ setIsRotating }) => {
       setIsRotating(true);
       controls.autoRotate = true;
+      // Exit PCB interaction mode when rotation resumes
+      setAllPCBComponentOutlinesVisible(false);
     });
   } else if (manualInteraction) {
     manualInteraction = false;
@@ -71,6 +74,7 @@ window.addEventListener('keydown', (e) => {
       const next = !isRotating;
       setIsRotating(next);
       controls.autoRotate = next;
+      if (next) setAllPCBComponentOutlinesVisible(false);
       console.log('Rotations:', next ? 'ON' : 'OFF');
     });
   }

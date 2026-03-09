@@ -10,6 +10,7 @@ import { aboutCubeGroup } from './aboutCube.js';
 import { gearGroup } from './gear.js';
 import { porscheGroup } from './porsche.js';
 import { musicalNoteGroup } from './musicalNote.js';
+import { setAllPCBComponentOutlinesVisible, setPCBComponentOutlinesFor } from './outlineManager.js';
 
 const raycaster = new THREE.Raycaster();
 raycaster.layers.set(1);
@@ -209,6 +210,8 @@ function onMouseDown(event) {
     setIsRotating(false);
     controls.autoRotate = false;
     resetManualInteraction(); // Clear any manual interaction flag before animation
+    // Enter PCB interaction mode: show component outlines for that PCB
+    setPCBComponentOutlinesFor(targetPCB, true);
     animateCameraToTopDown(camera, controls, targetPCB);
     
     // Only highlight and dim if it's NOT the PCB and NOT yellow zones
@@ -257,6 +260,8 @@ function onMouseDown(event) {
     hideInfoPanel();
     setIsRotating(true);
     controls.autoRotate = true;
+    // Exit PCB interaction mode: hide component outlines again
+    setAllPCBComponentOutlinesVisible(false);
   }
 }
 

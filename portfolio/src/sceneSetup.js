@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
+import { OutlineEffect } from 'three/examples/jsm/effects/OutlineEffect.js';
 
 export const scene = new THREE.Scene();
 
@@ -20,6 +21,13 @@ export const renderer = new THREE.WebGLRenderer({
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = false; // Disable shadows for performance
+
+// Screen-space outline (only objects with material.userData.outlineParameters.visible === true get outlined)
+export const outlineEffect = new OutlineEffect(renderer, {
+  defaultThickness: 0.004,
+  defaultColor: [0, 0.6, 0],
+  defaultAlpha: 1
+});
 
 const pmremGenerator = new THREE.PMREMGenerator(renderer);
 const roomEnvironment = new RoomEnvironment();

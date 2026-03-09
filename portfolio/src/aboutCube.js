@@ -24,6 +24,7 @@ export function initAboutCube() {
           metalness: 0.2,
           roughness: 0.4
         });
+        material.userData.outlineParameters = { visible: true, color: [0, 0.6, 0], thickness: 0.004 };
         const cube = new THREE.Mesh(geometry, material);
         cube.name = 'AboutCube';
         cube.layers.set(1);
@@ -45,6 +46,7 @@ export function initAboutCube() {
         // Fallback if texture fails: plain colored cube so something is visible
         const geometry = new THREE.BoxGeometry(CUBE_SIZE, CUBE_SIZE, CUBE_SIZE);
         const material = new THREE.MeshStandardMaterial({ color: 0x4488ff });
+        material.userData.outlineParameters = { visible: true, color: [0, 0.6, 0], thickness: 0.004 };
         const cube = new THREE.Mesh(geometry, material);
         cube.name = 'AboutCube';
         cube.layers.set(1);

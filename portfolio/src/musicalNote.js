@@ -27,6 +27,7 @@ export function initMusicalNote() {
               metalness: 0.4,
               roughness: 0.5
             });
+            mat.userData.outlineParameters = { visible: true, color: [0, 0.6, 0], thickness: 0.004 };
             child.userData.originalMaterial = mat;
             child.material = mat;
             meshes.push(child);

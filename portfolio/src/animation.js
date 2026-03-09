@@ -1,4 +1,4 @@
-import { scene, camera, renderer } from './sceneSetup.js';
+import { scene, camera, outlineEffect } from './sceneSetup.js';
 import { controls } from './controls.js';
 import { gltfModel, secondaryPCB, isRotating } from './modelLoader.js';
 import { aboutCubeGroup } from './aboutCube.js';
@@ -62,5 +62,5 @@ export function animate(currentTime = 0) {
   }
   
   controls.update();
-  renderer.render(scene, camera);
+  outlineEffect.render(scene, camera);
 }
