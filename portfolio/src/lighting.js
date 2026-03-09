@@ -37,3 +37,21 @@ function addStar() {
 }
 
 Array(100).fill().forEach(addStar); // Further reduced count for better performance
+
+// Theme toggle: dark ↔ bright (background + star colour)
+let isDark = true; // start dark (black bg, white stars)
+const themeBtn = document.getElementById('theme-toggle-btn');
+if (themeBtn) {
+  themeBtn.addEventListener('click', () => {
+    isDark = !isDark;
+    if (isDark) {
+      scene.background = new THREE.Color(0x000000);
+      starMaterial.color.setHex(0xffffff);
+      themeBtn.textContent = 'Change to day';
+    } else {
+      scene.background = new THREE.Color(0xffffff);
+      starMaterial.color.setHex(0x000000);
+      themeBtn.textContent = 'Change to night';
+    }
+  });
+}
