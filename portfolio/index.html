@@ -2,12 +2,17 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
-    <title>portfolio</title>
+    <title>Safiullah Nasim | Hardware Engineer</title>
+    <meta name="description" content="Electrical Engineering student at the University of Waterloo. Explore my PCB designs in 3D: BMS, motor current sensing, video transmitters and more." />
+    <meta property="og:title" content="Safiullah Nasim | Hardware Engineer" />
+    <meta property="og:description" content="Explore my PCB designs in 3D." />
+    <meta property="og:url" content="https://safnasim.ca" />
+    <meta property="og:type" content="website" />
     <style>
       /* Critical CSS to prevent FOUC */
       body { margin: 0; overflow: hidden; background: #000; }
@@ -32,8 +37,11 @@
       <button class="nav-btn" data-section="skills">SKILLS</button>
     </nav>
 
+    <!-- Shown until the first board is ready -->
+    <div id="loading" class="loading-text">Loading boards...</div>
+
     <!-- Hint Text -->
-    <div class="hint-text">Click components to explore | Press SPACE to pause rotation</div>
+    <div class="hint-text">Click a board to explore | Press SPACE to pause rotation</div>
 
     <!-- Theme toggle: dark ↔ bright -->
     <button type="button" id="theme-toggle-btn" class="theme-toggle-btn" aria-label="Toggle day or night">Change to day</button>
@@ -68,6 +76,17 @@
       </div>
     </div>
 
+    <!-- Board Info Panel -->
+    <div id="board-info-panel" class="info-panel board-info-panel">
+      <button id="close-board-panel" class="close-btn">&times;</button>
+      <div class="panel-content">
+        <h2 id="board-title">Board</h2>
+        <p id="board-context" class="board-context"></p>
+        <ul id="board-points" class="exp-details"></ul>
+        <div id="board-tags" class="tech-stack"></div>
+      </div>
+    </div>
+
     <!-- About Me Panel -->
     <div id="about-panel" class="modal-overlay">
       <div class="modal-panel">
@@ -89,13 +108,13 @@
 
         <div class="info-section">
           <p class="about-text">
-            Hey! I'm Safiullah, a passionate hardware and software engineer with a love for creating innovative solutions. 
-            I specialize in PCB design, embedded systems, and full-stack development. My journey in tech started with a curiosity 
-            about how things work, and it's grown into a career where I get to build and create every day.
+            Hey! I'm Safiullah, an Electrical Engineering student at the University of Waterloo. I work on PCB design and bring-up,
+            mixed-signal and power electronics, and the embedded firmware that runs on the boards I build.
           </p>
           <p class="about-text">
-            When I'm not designing circuits or writing code, you can find me exploring new technologies, contributing to open-source 
-            projects, and constantly learning. I believe in the power of technology to solve real-world problems and make people's lives better.
+            Right now I'm a Hardware Engineering Intern at Nimble Robotics in San Francisco, and I design boards with the Waterloo
+            Aerial Robotics Group and the Midnight Sun Solar Race Car Team. The boards floating around this page are ones I designed.
+            Click one to see how it works.
           </p>
         </div>
       </div>
@@ -148,6 +167,45 @@
         <h2>PROJECTS</h2>
         
         <div class="projects-grid">
+          <div class="project-card" data-project="flyback">
+            <div class="project-icon">⚡</div>
+            <h3>72W Isolated Flyback Converter</h3>
+            <p class="project-desc">Redesigned a 72W isolated flyback converter at Nimble Robotics around TI's LM5156 peak current-mode controller, delivering 12V at 6A. The robot runs simultaneous actions, so the supply has to handle fast current steps. Designed the transformer, tuned the output capacitance and filtering, and used LTSpice simulations and loop compensation to validate stability and efficiency.</p>
+            <div class="tech-stack">
+              <span class="tech-tag">LM5156</span>
+              <span class="tech-tag">FLYBACK</span>
+              <span class="tech-tag">LTSPICE</span>
+              <span class="tech-tag">TRANSFORMER DESIGN</span>
+              <span class="tech-tag">LOOP COMPENSATION</span>
+            </div>
+          </div>
+
+          <div class="project-card" data-project="omni-rover">
+            <div class="project-icon">🛰️</div>
+            <h3>Autonomous Rover Control Board</h3>
+            <p class="project-desc">6-layer mixed-signal PCB combining 24V motor drive, 2.4GHz BLE, and IMU/encoder sensing as the real-time controller for an autonomous rover. Includes a 15A power path with eFuse and reverse-polarity protection, closed-loop velocity control for 4 brushed DC motors, and a 50Ω RF front-end. Currently in design.</p>
+            <div class="tech-stack">
+              <span class="tech-tag">ALTIUM</span>
+              <span class="tech-tag">STM32</span>
+              <span class="tech-tag">NRF</span>
+              <span class="tech-tag">UART</span>
+              <span class="tech-tag">SPI</span>
+            </div>
+          </div>
+
+          <div class="project-card" data-project="bms">
+            <div class="project-icon">🔋</div>
+            <h3>4S LiPo Battery Management System</h3>
+            <p class="project-desc">4S LiPo BMS with a BQ76920 AFE and STM32 host, featuring an interrupt-driven fault state machine, Coulomb counting, and passive cell balancing. Click to see the board in 3D.</p>
+            <div class="tech-stack">
+              <span class="tech-tag">ALTIUM</span>
+              <span class="tech-tag">BQ76920</span>
+              <span class="tech-tag">STM32</span>
+              <span class="tech-tag">I2C</span>
+              <span class="tech-tag">UART</span>
+            </div>
+          </div>
+
           <!-- Project Card 1 -->
           <div class="project-card" data-project="embedded-usb-mouse">
             <div class="project-icon">⚡</div>
@@ -235,7 +293,7 @@
           <div class="project-card" data-project="pcb-visualizer">
             <div class="project-icon">💻</div>
             <h3>PCB Visualizer</h3>
-            <p class="project-desc">Built an interactive 3D PCB visualization tool that loads KiCad models in the browser using Three.js, letting users click individual components to see their function and role in the circuit.</p>
+            <p class="project-desc">Built an interactive 3D PCB visualization tool that loads KiCad and Altium models in the browser using Three.js, letting users click individual components to see their function and role in the circuit.</p>
             <div class="tech-stack">
               <span class="tech-tag">Three.js</span>
               <span class="tech-tag">javascript</span>
@@ -257,16 +315,46 @@
         <h2>EXPERIENCE</h2>
         
         <div class="experience-list">
-          <!-- Experience Item 1 -->
           <div class="experience-item">
             <div class="exp-header">
               <div>
-                <h3 class="exp-title">Electrical Designer Co-op</h3>
-                <p class="exp-company">Plan Group </p>
+                <h3 class="exp-title">Hardware Engineering Intern</h3>
+                <p class="exp-company">Nimble Robotics · San Francisco, CA</p>
+              </div>
+              <span class="exp-date">Aug 2026 – Present</span>
+            </div>
+            <ul class="exp-details">
+              <li>Debugged and validated 25+ production PCBs across the robot fleet, performing root-cause analysis using oscilloscopes and logic analyzers to identify and resolve hardware faults.</li>
+              <li>Redesigned a 72W isolated flyback converter (12V/6A, LM5156), performing transformer design, LTSpice simulations, and loop compensation to validate stability and efficiency.</li>
+              <li>Built a full-robot benchtop test rig integrating 50+ sensors and motors to replicate the complete robot electrical architecture for hardware and firmware validation.</li>
+            </ul>
+          </div>
+
+          <div class="experience-item">
+            <div class="exp-header">
+              <div>
+                <h3 class="exp-title">Hardware Member</h3>
+                <p class="exp-company">Waterloo Aerial Robotics Group &amp; Midnight Sun Solar Race Car Team</p>
+              </div>
+              <span class="exp-date">Jan 2026 – Present</span>
+            </div>
+            <ul class="exp-details">
+              <li>Designed a motor current-sense board measuring motor current draw across a 120V bus via a precision Kelvin-sense shunt resistor and isolated ADC, separating the high-voltage sense domain from the 3.3V logic domain.</li>
+              <li>Implemented digital isolation on the I2C interface and an isolated DC-DC supply to safely bridge the 120V power domain to low-voltage control electronics, protecting the STM32 from the HV bus.</li>
+              <li>Designed a unified analog VTX board around an STM32G4, multiplexing multiple camera feeds into one switchable output with a dedicated OSD chip for telemetry overlay.</li>
+            </ul>
+          </div>
+
+          <div class="experience-item">
+            <div class="exp-header">
+              <div>
+                <h3 class="exp-title">Electrical Engineering Intern</h3>
+                <p class="exp-company">Plan Group Inc · Toronto, ON</p>
               </div>
               <span class="exp-date">Jan 2026 – Apr 2026</span>
             </div>
             <ul class="exp-details">
+              <li>Built Excel tools for slab conduit sizing and concrete slab type validation, adopted by engineers across 2 active projects to replace manual calculations and reduce design decision time by 30%.</li>
               <li>Coordinated electrical design documentation by organizing drawing sets and revisions using AutoCAD, Revit,
 Bluebeam, and Procore for large-scale projects including the Trillium M Site hospital.</li>
               <li>Supported electrical design teams by communicating with engineers, designers, and project managers to clarify
@@ -337,29 +425,23 @@ ACFR correctional facility, streamlining access to files for engineering teams.<
         <h2>TECHNICAL SKILLS</h2>
         
         <div class="skills-section">
-          <h3 class="skills-category">Languages:</h3>
-          <p class="skills-list">Python, C/C++, Javascript, HTML, CSS, Typescript</p>
+          <h3 class="skills-category">Hardware:</h3>
+          <p class="skills-list">PCB Design &amp; Bring-up, Mixed Signal Analog/Digital Design, Power Electronics</p>
         </div>
 
         <div class="skills-section">
-          <h3 class="skills-category">Frameworks & Platforms:</h3>
-          <p class="skills-list">Arduino IDE, Three.JS, Vite, STM32 CUBE/MX</p>
+          <h3 class="skills-category">ECAD/Software:</h3>
+          <p class="skills-list">Altium Designer, KiCAD, LTSpice, STM32CubeIDE/MX, Git, VS Code, FreeRTOS</p>
         </div>
 
         <div class="skills-section">
-          <h3 class="skills-category">Hardware & Electronics:</h3>
-          <p class="skills-list">STM32, Arduino, SPI, HAL, Bluetooth, Motor Control, I2C, UART, PWM, PCB Design, PCB Fabrication, Soldering</p>
+          <h3 class="skills-category">Protocols/Languages:</h3>
+          <p class="skills-list">I2C, SPI, UART, USB, CAN, SWD/JTAG, Embedded C/C++, Python, SystemVerilog</p>
         </div>
 
         <div class="skills-section">
-          <h3 class="skills-category">Design Tools:</h3>
-          <p class="skills-list">KiCAD, Autodesk Fusion 360, AutoCAD, Revit</p>
-        </div>
-        
-
-        <div class="skills-section">
-          <h3 class="skills-category">Developer Tools:</h3>
-          <p class="skills-list">VS Code, Git</p>
+          <h3 class="skills-category">Lab Skills:</h3>
+          <p class="skills-list">Oscilloscope, Logic Analyzer, Multimeter, Soldering, Power Supplies, 3D Printing</p>
         </div>
       </div>
       </div>

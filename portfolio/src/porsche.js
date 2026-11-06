@@ -1,6 +1,7 @@
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { scene } from './sceneSetup.js';
+import { gltfLoader } from './loader.js';
+import { createHitProxy } from './boardScene.js';
 import { componentGroups } from './modelLoader.js';
 
 export let porscheGroup = null;
@@ -10,8 +11,7 @@ const PORSCHE_SCALE = 1.5; // Car model is big – change this to resize (e.g. 0
 
 export function initPorsche() {
   return new Promise((resolve, reject) => {
-    const loader = new GLTFLoader();
-    loader.load(
+    gltfLoader.load(
       '/porsche_gt3_rs.glb',
       (glb) => {
         const model = glb.scene;
@@ -20,7 +20,7 @@ export function initPorsche() {
         model.traverse((child) => {
           if (child.isMesh) {
             child.name = 'Porsche';
-            child.layers.set(1);
+            child.layers.set(0); // hit-testing uses the proxy box, not every triangle
             if (child.material) child.userData.originalMaterial = child.material;
             meshes.push(child);
             // Screen-space green outline (OutlineEffect) – only visible edges, no back outline
@@ -38,6 +38,10 @@ export function initPorsche() {
         group.position.copy(PORSCHE_POSITION);
         group.userData.visualCenter = PORSCHE_POSITION.clone();
         group.add(model);
+
+        const proxy = createHitProxy(model, group);
+        proxy.name = 'Porsche';
+        group.add(proxy);
 
         scene.add(group);
         componentGroups['Porsche'] = meshes;

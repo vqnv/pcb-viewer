@@ -1,3 +1,5 @@
+import { focusBoard } from './interactions.js';
+
 // Handle navigation button clicks
 const navButtons = document.querySelectorAll('.nav-btn');
 const aboutPanel = document.getElementById('about-panel');
@@ -124,8 +126,18 @@ const projectDetailModal = document.getElementById('project-detail-modal');
 const closeProjectDetailBtn = document.getElementById('close-project-detail');
 const projectCards = document.querySelectorAll('.project-card');
 
-// Project data with images and links
+// Project data with images and links. A `board` id flies to that board in the 3D scene instead.
 const projectData = {
+  'omni-rover': {
+    title: 'Autonomous Rover Control Board',
+    image: '/projects/omni-rover.png',
+    demo: '#',
+    github: '#'
+  },
+  'bms': {
+    title: '4S LiPo Battery Management System',
+    board: 'bms'
+  },
   'embedded-usb-mouse': {
     title: 'Embedded USB HID Mouse',
     image: '/projects/usb-mouse.jpg',
@@ -176,7 +188,13 @@ projectCards.forEach(card => {
     e.stopPropagation();
     const projectId = card.getAttribute('data-project');
     const project = projectData[projectId];
-    
+
+    if (project?.board) {
+      projectsPanel.classList.remove('active');
+      focusBoard(project.board);
+      return;
+    }
+
     if (project) {
       // Update modal content
       document.getElementById('project-detail-title').textContent = project.title;

@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { scene } from './sceneSetup.js';
+import { gltfLoader } from './loader.js';
 import { componentGroups } from './modelLoader.js';
 
 export let gearGroup = null;
@@ -10,8 +10,7 @@ const GEAR_SCALE = 0.1; // Change this to resize the gear (e.g. 0.25 = smaller, 
 
 export function initGear() {
   return new Promise((resolve, reject) => {
-    const loader = new GLTFLoader();
-    loader.load(
+    gltfLoader.load(
       '/gear.glb',
       (glb) => {
         const model = glb.scene;

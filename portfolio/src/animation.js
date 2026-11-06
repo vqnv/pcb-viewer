@@ -1,66 +1,72 @@
-import { scene, camera, outlineEffect } from './sceneSetup.js';
+import { scene, camera, renderer, outlineEffect } from './sceneSetup.js';
+import { DEFAULT_NEAR } from './cameraAnimation.js';
 import { controls } from './controls.js';
 import { gltfModel, secondaryPCB, isRotating } from './modelLoader.js';
 import { aboutCubeGroup } from './aboutCube.js';
 import { gearGroup } from './gear.js';
 import { porscheGroup } from './porsche.js';
 import { musicalNoteGroup } from './musicalNote.js';
+import { boardGroups } from './boardScene.js';
 
-// FPS limiting for better performance
-const targetFPS = 60;
-const frameDelay = 1000 / targetFPS;
-let lastFrameTime = 0;
+function spin(object, x, y, z, step) {
+  if (!object) return;
+  object.rotation.x += x * step;
+  object.rotation.y += y * step;
+  object.rotation.z += z * step;
+}
 
-export function animate(currentTime = 0) {
+// Only trade sharpness for speed on devices that really can't keep up, and never
+// go below one render pixel per screen pixel.
+const SAMPLE_FRAMES = 90;
+const SLOW_FRAME_SECONDS = 1 / 20;
+const MIN_PIXEL_RATIO = 1;
+let sampleTime = 0;
+let sampleCount = 0;
+
+function adaptQuality(delta) {
+  if (delta > 0.25) return; // a stall (model upload, tab switch), not steady-state speed
+  sampleTime += delta;
+  sampleCount += 1;
+  if (sampleCount < SAMPLE_FRAMES) return;
+  const average = sampleTime / sampleCount;
+  sampleTime = 0;
+  sampleCount = 0;
+  const ratio = renderer.getPixelRatio();
+  if (average > SLOW_FRAME_SECONDS && ratio > MIN_PIXEL_RATIO) {
+    renderer.setPixelRatio(Math.max(MIN_PIXEL_RATIO, ratio - 0.25));
+  }
+}
+
+let lastTime = 0;
+
+export function animate(time = 0) {
   requestAnimationFrame(animate);
-  
-  // Limit to target FPS
-  const elapsed = currentTime - lastFrameTime;
-  if (elapsed < frameDelay) return;
-  lastFrameTime = currentTime - (elapsed % frameDelay);
-  
-  // Rotate the main PCB if it's loaded and rotation is enabled
-  if (gltfModel && isRotating) {
-    gltfModel.rotation.x += 0.002;
-    gltfModel.rotation.y += 0.0018;
-    gltfModel.rotation.z += 0.0015;
-  }
-  
-  // Rotate the secondary PCB with different speeds for variety
-  if (secondaryPCB && isRotating) {
-    secondaryPCB.rotation.x += 0.0022;
-    secondaryPCB.rotation.y += 0.002;
-    secondaryPCB.rotation.z += 0.0018;
+  const delta = (time - lastTime) / 1000;
+  lastTime = time;
+  adaptQuality(delta);
+
+  if (isRotating) {
+    // Speeds are per 60fps frame, so motion looks the same on any refresh rate
+    const step = Math.min(delta, 0.1) * 60;
+    spin(gltfModel, 0.002, 0.0018, 0.0015, step);
+    spin(secondaryPCB, 0.0022, 0.002, 0.0018, step);
+    spin(aboutCubeGroup, 0.002, 0.0022, 0.0018, step);
+    spin(gearGroup, 0.002, 0.0022, 0.0018, step);
+    spin(porscheGroup, 0.002, 0.0022, 0.0018, step);
+    spin(musicalNoteGroup, 0.0006, 0.0007, 0.0005, step);
+    boardGroups.forEach((group) => spin(group, 0.0018, 0.002, 0.0016, step));
   }
 
-  // Rotate the about cube so it has the same cool spin
-  if (aboutCubeGroup && isRotating) {
-    aboutCubeGroup.rotation.x += 0.002;
-    aboutCubeGroup.rotation.y += 0.0022;
-    aboutCubeGroup.rotation.z += 0.0018;
-  }
-
-  // Rotate the gear
-  if (gearGroup && isRotating) {
-    gearGroup.rotation.x += 0.002;
-    gearGroup.rotation.y += 0.0022;
-    gearGroup.rotation.z += 0.0018;
-  }
-
-  // Rotate the Porsche
-  if (porscheGroup && isRotating) {
-    porscheGroup.rotation.x += 0.002;
-    porscheGroup.rotation.y += 0.0022;
-    porscheGroup.rotation.z += 0.0018;
-  }
-
-  // Rotate the musical note
-  if (musicalNoteGroup && isRotating) {
-    musicalNoteGroup.rotation.x += 0.0006;
-    musicalNoteGroup.rotation.y += 0.0007;
-    musicalNoteGroup.rotation.z += 0.0005;
-  }
-  
   controls.update();
+
+  // The near plane is raised after flying to a board; keep it clear of the board when zooming in.
+  if (camera.near > DEFAULT_NEAR) {
+    const allowed = Math.max(DEFAULT_NEAR, camera.position.distanceTo(controls.target) * 0.5);
+    if (allowed < camera.near) {
+      camera.near = allowed;
+      camera.updateProjectionMatrix();
+    }
+  }
+
   outlineEffect.render(scene, camera);
 }

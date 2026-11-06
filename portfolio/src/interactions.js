@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { scene, camera, renderer } from './sceneSetup.js';
 import { controls, resetManualInteraction } from './controls.js';
 import { gltfModel, secondaryPCB, componentGroups, isRotating, setIsRotating } from './modelLoader.js';
-import { animateCameraToTopDown } from './cameraAnimation.js';
+import { animateCameraToTopDown, animateCameraHome } from './cameraAnimation.js';
 import { applyHighlight, resetHighlight, dimOtherComponents, restoreAllBrightness, applyHoverEffect, removeHoverEffect } from './highlighting.js';
 import { showInfoPanel, hideInfoPanel } from './uiPanel.js';
 import { getBaseName, getComponentGroup } from './utils.js';
@@ -11,6 +11,9 @@ import { gearGroup } from './gear.js';
 import { porscheGroup } from './porsche.js';
 import { musicalNoteGroup } from './musicalNote.js';
 import { setAllPCBComponentOutlinesVisible, setPCBComponentOutlinesFor } from './outlineManager.js';
+import { boards } from './boards.js';
+import { boardGroups, loadHiResArt, releaseHiResArt } from './boardScene.js';
+import { showBoardPanel, hideBoardPanel } from './boardPanel.js';
 
 const raycaster = new THREE.Raycaster();
 raycaster.layers.set(1);
@@ -36,7 +39,7 @@ function getHoverLabel(key) {
     SecondaryPCB: 'Ambient light PCB'
   };
   if (specials[key]) return specials[key];
-  return '';
+  return boards.find((b) => b.id === key)?.label ?? '';
 }
 
 function showHoverBubble(key, clientX, clientY) {
@@ -65,16 +68,57 @@ export function updateRaycastTargets() {
   raycastTargets = [];
   scene.children.forEach(obj => {
     obj.traverse(child => {
-      if (!child.isMesh || !child.layers.test(camera.layers)) return;
+      if (!child.isMesh || !child.layers.test(raycaster.layers)) return;
       const name = (child.name || '').toLowerCase();
-      if (name.includes('mergedtracks')) return; // skip big zone mesh(es)
+      if (name.startsWith('merged')) return; // skip big zone mesh(es)
       raycastTargets.push(child);
     });
   });
   console.log(`Raycast optimization: ${raycastTargets.length} targets cached`);
 }
 
+let boardFocused = false;
+
+/** Leave a board: close its panel, resume rotation and fly back to the opening view. */
+function leaveBoard() {
+  boardFocused = false;
+  releaseHiResArt();
+  hideBoardPanel();
+  setIsRotating(true);
+  controls.autoRotate = true;
+  animateCameraHome(camera, controls);
+}
+
+document.getElementById('close-board-panel').addEventListener('click', leaveBoard);
+
+/** Stop rotation, clear any selection, fly to a board and show its details. */
+export function focusBoard(id) {
+  const group = boardGroups.get(id);
+  if (!group) return;
+  boardFocused = true;
+  setIsRotating(false);
+  controls.autoRotate = false;
+  resetManualInteraction();
+  if (selectedObject) {
+    resetHighlight(componentGroups, selectedObject);
+    restoreAllBrightness(componentGroups);
+    selectedObject = null;
+  }
+  if (hoveredObject) {
+    removeHoverEffect(componentGroups, hoveredObject);
+    hoveredObject = null;
+  }
+  hideInfoPanel();
+  hideHoverBubble();
+  animateCameraToTopDown(camera, controls, group);
+  showBoardPanel(id);
+  loadHiResArt(id).catch((error) => console.error('Full-size board art failed', error));
+}
+
 function onMouseDown(event) {
+  // Clicks on buttons and panels shouldn't also select whatever is behind them
+  if (event.target !== renderer.domElement) return;
+
   const coords = new THREE.Vector2(
     (event.clientX / renderer.domElement.clientWidth) * 2 - 1,
     -((event.clientY / renderer.domElement.clientHeight) * 2 - 1)
@@ -88,6 +132,14 @@ function onMouseDown(event) {
   if (intersections.length > 0) {
     const clickedMesh = intersections[0].object;
     const name = getBaseName(clickedMesh.name) || clickedMesh.name || '';
+
+    if (clickedMesh.userData.boardId) {
+      focusBoard(clickedMesh.userData.boardId);
+      return;
+    }
+    hideBoardPanel();
+    boardFocused = false;
+    releaseHiResArt();
 
     // About cube: animate to cube then open About Me panel
     if ((name === 'AboutCube' || clickedMesh.name === 'AboutCube') && aboutCubeGroup) {
@@ -294,6 +346,10 @@ function onMouseDown(event) {
       hoveredObject = null;
     }
     hideInfoPanel();
+    if (boardFocused) {
+      leaveBoard();
+      return;
+    }
     setIsRotating(true);
     controls.autoRotate = true;
     // Exit PCB interaction mode: hide component outlines again
@@ -377,8 +433,8 @@ function onMouseMove(event) {
     }
 
     // Decide which high-level object this hover should label (if any)
-    let hoverKey = null;
-    let current = clickedMesh;
+    let hoverKey = clickedMesh.userData.boardId ?? null;
+    let current = hoverKey ? null : clickedMesh;
     while (current) {
       if (current === aboutCubeGroup) { hoverKey = 'AboutCube'; break; }
       if (current === gearGroup) { hoverKey = 'Gear'; break; }

@@ -971,3 +971,57 @@ audio::-webkit-media-controls-enclosure {
     max-height: 90vh;
   }
 }
+/* Loading text, hidden once the first board is on screen */
+.loading-text {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  color: #4caf50;
+  z-index: 900;
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+}
+
+.loading-text.done {
+  opacity: 0;
+}
+
+/* Board details: same panel as components, sized to its content */
+.board-info-panel {
+  box-sizing: border-box;
+  width: min(380px, calc(100vw - 2 * var(--panel-margin)));
+  height: auto;
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+.board-context {
+  color: #a5d6a7;
+  font-size: 13px;
+  margin-bottom: 15px;
+}
+
+/* Phones: details dock along the bottom so the board stays visible above them */
+@media (max-width: 900px) and (orientation: portrait) {
+  .board-info-panel {
+    top: auto;
+    bottom: max(12px, var(--safe-bottom));
+    transform: none;
+    width: calc(100vw - 24px);
+    max-height: 45vh;
+  }
+
+  .board-info-panel.active {
+    right: 12px;
+  }
+}
+
+/* No spacebar on phones, and the hint collides with the theme button */
+@media (max-width: 600px) {
+  .hint-text {
+    display: none;
+  }
+}

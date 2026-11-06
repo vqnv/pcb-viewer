@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { scene } from './sceneSetup.js';
+import { gltfLoader } from './loader.js';
 import { componentGroups } from './modelLoader.js';
 
 export let musicalNoteGroup = null;
@@ -10,8 +10,7 @@ const NOTE_SCALE = 3; // Bigger = easier to click and camera zooms to it
 
 export function initMusicalNote() {
   return new Promise((resolve, reject) => {
-    const loader = new GLTFLoader();
-    loader.load(
+    gltfLoader.load(
       '/musical_note.glb',
       (glb) => {
         const model = glb.scene;

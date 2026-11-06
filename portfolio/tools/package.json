@@ -1,0 +1,15 @@
+{
+  "name": "portfolio-tools",
+  "private": true,
+  "type": "module",
+  "description": "Offline asset tools (STEP to GLB). Not part of the deployed site.",
+  "dependencies": {
+    "@gltf-transform/core": "^4.3.0",
+    "@gltf-transform/extensions": "^4.3.0",
+    "@gltf-transform/functions": "^4.3.0",
+    "meshoptimizer": "^0.25.0",
+    "occt-import-js": "^0.0.23",
+    "pcb-stackup": "^4.2.8",
+    "sharp": "^0.35.5"
+  }
+}

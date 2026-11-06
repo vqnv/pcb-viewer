@@ -30,15 +30,15 @@ const starMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff }); // Basic 
 // Never outline stars
 starMaterial.userData.outlineParameters = { visible: false };
 
-function addStar() {
-  const star = new THREE.Mesh(starGeometry, starMaterial);
+// One instanced mesh = one draw call for every star. Layer 0, so the raycaster ignores them.
+const STAR_COUNT = 100;
+const stars = new THREE.InstancedMesh(starGeometry, starMaterial, STAR_COUNT);
+const starMatrix = new THREE.Matrix4();
+for (let i = 0; i < STAR_COUNT; i++) {
   const [x, y, z] = Array(3).fill().map(() => THREE.MathUtils.randFloatSpread(100));
-  star.position.set(x, y, z);
-  star.layers.set(0); // Put stars on layer 0 so raycaster ignores them
-  scene.add(star);
+  stars.setMatrixAt(i, starMatrix.makeTranslation(x, y, z));
 }
-
-Array(100).fill().forEach(addStar); // Further reduced count for better performance
+scene.add(stars);
 
 // Theme toggle: dark ↔ bright (background + star colour)
 let isDark = true; // start dark (black bg, white stars)

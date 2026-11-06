@@ -2,10 +2,20 @@ import * as THREE from 'three';
 
 export let isAnimatingCamera = false;
 
+export const DEFAULT_NEAR = 0.1;
+
+function setNear(camera, near) {
+  camera.near = near;
+  camera.updateProjectionMatrix();
+}
+
 export function animateCameraToTopDown(camera, controls, targetModel) {
   if (isAnimatingCamera) return;
   isAnimatingCamera = true;
   
+  setNear(camera, DEFAULT_NEAR);
+  let arrivalNear = DEFAULT_NEAR;
+
   // Disable controls during animation
   controls.enabled = false;
   
@@ -33,7 +43,19 @@ export function animateCameraToTopDown(camera, controls, targetModel) {
     const dir = new THREE.Vector3(0, 0.4, 1).normalize();
     targetPosition = modelCenter.clone().add(dir.multiplyScalar(dist));
   } else {
-    const dy = 12, dz = 3;
+    // Boards with a known size are framed to fit, including on narrow phone screens
+    const fitSize = targetModel?.userData?.fitSize;
+    const halfFov = THREE.MathUtils.degToRad(camera.fov / 2);
+    const dy = fitSize ? (fitSize * 1.45) / (2 * Math.tan(halfFov) * Math.min(camera.aspect, 1)) : 12;
+    const dz = fitSize ? dy * 0.2 : 3;
+    if (fitSize) {
+      // Slide the view so the board sits clear of the details panel:
+      // the panel is on the right on wide screens and along the bottom on phones.
+      if (camera.aspect > 1.2) modelCenter.x += fitSize * 0.4;
+      else if (camera.aspect < 0.8) modelCenter.z += dy * 0.3;
+      // Far-back views can have other objects in front of the board, so clip those out.
+      arrivalNear = dy * 0.5;
+    }
     targetPosition = new THREE.Vector3(modelCenter.x, modelCenter.y + dy, modelCenter.z + dz);
   }
   const targetLookAt = modelCenter.clone();
@@ -93,6 +115,7 @@ export function animateCameraToTopDown(camera, controls, targetModel) {
       requestAnimationFrame(animateStep);
     } else {
       camera.up.set(0, 1, 0);
+      setNear(camera, arrivalNear);
       // Small delay before marking animation complete to ensure controls settle
       setTimeout(() => {
         isAnimatingCamera = false;
@@ -103,4 +126,36 @@ export function animateCameraToTopDown(camera, controls, targetModel) {
   }
   
   animateStep();
+}
+
+const HOME_POSITION = new THREE.Vector3(-10, 5, 15);
+const HOME_TARGET = new THREE.Vector3(0, 0, 0);
+
+/** Fly back to the opening view. */
+export function animateCameraHome(camera, controls) {
+  if (isAnimatingCamera) return;
+  isAnimatingCamera = true;
+  controls.enabled = false;
+  setNear(camera, DEFAULT_NEAR);
+
+  const startPosition = camera.position.clone();
+  const startTarget = controls.target.clone();
+  const startTime = Date.now();
+  const duration = 1000;
+
+  function step() {
+    const progress = Math.min((Date.now() - startTime) / duration, 1);
+    const eased = progress < 0.5 ? 2 * progress * progress : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+    camera.position.lerpVectors(startPosition, HOME_POSITION, eased);
+    controls.target.lerpVectors(startTarget, HOME_TARGET, eased);
+    camera.lookAt(controls.target);
+    if (progress < 1) {
+      requestAnimationFrame(step);
+    } else {
+      isAnimatingCamera = false;
+      controls.enabled = true;
+      controls.update();
+    }
+  }
+  step();
 }
